@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import * as b from "../test-support/swf-builder.js";
@@ -58,4 +58,14 @@ test("bundle precedence: the everyday look puts game-fla first, the client code'
   assert.deepEqual(orderBundles(names, BUNDLE_PRECEDENCE), ["game-fla", "game-resources", "pictos", "shaman-items"]);
   assert.deepEqual(orderBundles(names, CLIENT_BUNDLE_PRECEDENCE), ["game-resources", "shaman-items", "pictos", "game-fla"]);
   assert.deepEqual(orderBundles(["x", "game-fla"], ["game-fla"]), ["game-fla", "x"]);
+});
+
+test("loadRelease refuses a release of another format version", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "tfm-release-version-"));
+  try {
+    await writeFile(path.join(dir, "release.json"), JSON.stringify({ format: "tfm-assets-release", version: 99, bundles: [] }));
+    await assert.rejects(loadRelease(dir), /format version 99/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });

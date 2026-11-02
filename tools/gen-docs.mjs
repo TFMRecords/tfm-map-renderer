@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Writes the generated regions of docs/xml/*.md and docs/rendering.md (between `<!-- BEGIN:name -->` and
-// `<!-- END:name -->`) from src/tfm/spec/, and docs/xml/spec.json with the same data for other tools.
+// Writes the generated regions of docs/xml/*.md, docs/rendering.md and docs/api/parser.md (between `<!-- BEGIN:name -->`
+// and `<!-- END:name -->`) from src/tfm/spec/ and the JSDoc of the public exports (tools/gen-api.mjs), and
+// docs/xml/spec.json with the spec data for other tools.
 //   node tools/gen-docs.mjs          rewrite the files
 //   node tools/gen-docs.mjs --check  exit 1 when a file is stale
 // Prose outside the markers is hand-written and never touched. Every region must appear in exactly one file.
@@ -8,11 +9,12 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import * as spec from "../src/tfm/spec/index.js";
 import { GROUND_TEXTURE_RECIPES } from "../src/render/ground-textures.js";
+import { renderApi } from "./gen-api.mjs";
 
 const root = new URL("../", import.meta.url);
 const XML_DIR = new URL("docs/xml/", root);
 const SPEC_JSON = new URL("docs/xml/spec.json", root);
-const EXTRA_FILES = [new URL("docs/rendering.md", root)];
+const EXTRA_FILES = [new URL("docs/rendering.md", root), new URL("docs/api/parser.md", root)];
 
 const cell = (s) => String(s).replace(/\|/g, "\\|").replace(/\n/g, " ");
 const code = (s) => `\`${s}\``;
@@ -170,7 +172,7 @@ function fill(text, regions, used, file) {
 
 /** @returns {Promise<{stale: string[]}>} files whose content differs from the generated one (written unless `check`) */
 export async function generateDocs({ check = false } = {}) {
-  const regions = renderRegions();
+  const regions = { ...renderRegions(), api: await renderApi() };
   const files = [...(await readdir(XML_DIR)).filter((f) => f.endsWith(".md")).sort().map((f) => new URL(f, XML_DIR)), ...EXTRA_FILES];
   const used = new Map();
   const outputs = [];

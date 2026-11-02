@@ -7,3 +7,4 @@ export { loadAssetBundle, loadAssetBundleOrNull, normalizeAssetLocation, githubR
 export { createBundleResolver } from "./assets/bundle-resolver.js";
 export { AssetBundle, packBundle, bundleFileName, writeBundleDirectory, readBundleDirectory } from "./assets/bundle.js";
 export { buildManifest as buildBundleManifest, validateManifest as validateBundleManifest } from "./assets/bundle-manifest.js";
+export { buildRelease, loadRelease, BUNDLE_PRECEDENCE, CLIENT_BUNDLE_PRECEDENCE, RELEASE_SOURCES } from "./assets/release.js";

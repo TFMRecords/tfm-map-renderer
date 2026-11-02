@@ -123,6 +123,8 @@ export async function buildRelease({
 export async function loadRelease(dir, { flashBlur = true, precedence = "normal" } = {}) {
   const index = JSON.parse(await readFile(path.join(dir, "release.json"), "utf8"));
   if (index.format !== RELEASE_FORMAT) throw new Error(`${dir}/release.json is not a ${RELEASE_FORMAT} index`);
+  // docs/asset-bundle-format.md#versions
+  if (index.version !== RELEASE_VERSION) throw new Error(`${dir}/release.json has format version ${index.version}; this version of tfm-map-renderer reads version ${RELEASE_VERSION} (update the package or use a matching release)`);
   const effects = await readFile(path.join(dir, "effects.json"), "utf8").then(JSON.parse, () => ({}));
   const bundles = new Map();
   for (const b of index.bundles) {

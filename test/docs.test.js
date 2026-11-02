@@ -92,3 +92,15 @@ test("doc and spec references in the source resolve", async () => {
   }
   assert.deepEqual(problems, []);
 });
+
+test("every public export has JSDoc for the API reference", async () => {
+  const { apiEntries } = await import("../tools/gen-api.mjs");
+  assert.deepEqual((await apiEntries()).filter((e) => !e.doc).map((e) => `${e.file}: ${e.name}`), []);
+});
+
+test("openapi.yaml lists every option the server accepts", async () => {
+  const { ALLOWED_OPTIONS } = await import("../src/server/render-service.js");
+  const yaml = await readFile(join(ROOT, "docs/api/openapi.yaml"), "utf8");
+  const options = yaml.slice(yaml.indexOf("    RenderOptions:"), yaml.indexOf("    RenderResponse:"));
+  assert.deepEqual(Object.keys(ALLOWED_OPTIONS).filter((name) => !new RegExp(`^        ${name}:`, "m").test(options)), []);
+});

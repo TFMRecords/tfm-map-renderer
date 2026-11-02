@@ -12,7 +12,7 @@ import { createRenderServer } from "../src/server/http.js";
 import { createResvgRasterizer } from "../src/server/rasterize.js";
 import { loadRelease } from "../src/assets/release.js";
 
-// Accepts `--key value`, `--key=value` and a lone number as the port. npm on Windows/PowerShell can swallow `--` and eat the flags, so `npm run server:render`
+// Accepts `--key value`, `--key=value` and a lone number as the port. npm on Windows/PowerShell can swallow `--` and eat the flags, so `npm run server`
 // (no arguments) reads PORT / TFM_ASSETS_RELEASE, and a flag npm took for itself is recovered from npm_config_<flag>.
 const FLAGS = new Set(["no-flash-blur", "no-share-assets"]);
 const VALUE_FLAGS = ["release", "port", "host", "precedence", "concurrency", "timeout", "max-pixels"];

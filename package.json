@@ -1,0 +1,37 @@
+{
+  "name": "tfm-map-renderer",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Transformice map parser, asset tooling and renderers",
+  "exports": {
+    ".": "./src/index.js",
+    "./node": "./src/node.js",
+    "./render": "./src/render/index.js",
+    "./assets/url-policy": "./src/assets/url-policy.js",
+    "./spec": "./src/tfm/spec/index.js"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "bench:parser": "node bench/parser.mjs 10000",
+    "bench:parser-large": "node bench/parser-large.mjs",
+    "bench:render-svg": "node bench/render-svg.mjs 1000",
+    "assets": "node bin/tfm-assets.mjs",
+    "assets:build": "node bin/tfm-assets.mjs build",
+    "server": "node bin/tfm-render-server.mjs",
+    "compare": "node tools/compare-screenshot.mjs",
+    "docs:xml": "node tools/gen-docs.mjs",
+    "docs:xml:check": "node tools/gen-docs.mjs --check"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "tfm-map-parse": "./bin/parse-map.mjs",
+    "tfm-assets": "./bin/tfm-assets.mjs",
+    "tfm-render-server": "./bin/tfm-render-server.mjs"
+  },
+  "optionalDependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

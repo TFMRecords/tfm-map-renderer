@@ -1,0 +1,3441 @@
+{
+  "attributes": [
+    {
+      "id": "P.nosync",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "nosync",
+      "tags": null,
+      "note": "",
+      "field": "settings.nosync",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`. A ground or object is synchronised only when neither it nor the settings carry `nosync`.",
+      "meaning": "Turns off room synchronisation for every ground and object of the map.",
+      "status": "verified",
+      "examples": [
+        [
+          "nosync=\"\"",
+          "settings.nosync",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.theme",
+      "scope": "settings",
+      "doc": "decorations#holes-and-cheese",
+      "node": "P",
+      "name": "theme",
+      "tags": null,
+      "note": "",
+      "field": "settings.theme, settings.themeHalloween",
+      "type": "string",
+      "default": "none",
+      "rule": "`truthy`, lower-cased. Only `halloween` has an effect (it changes the cheese picture, see decorations).",
+      "meaning": "Event theme.",
+      "status": "verified",
+      "examples": [
+        [
+          "theme=\"HalloWeen\"",
+          "settings.themeHalloween",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.mc",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "mc",
+      "tags": null,
+      "note": "",
+      "field": "settings.hideNails",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Hides the pictures of the nails placed in the map: no nail picture is added during the first 5 seconds of a round. The nails still hold.",
+      "status": "verified",
+      "examples": [
+        [
+          "mc=\"\"",
+          "settings.hideNails",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.dodue",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "dodue",
+      "tags": null,
+      "note": "",
+      "field": "settings.dodue",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Lets mice collect several cheeses; the cheese is drawn as a cheese pile.",
+      "status": "verified",
+      "examples": [
+        [
+          "dodue=\"\"",
+          "settings.dodue",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.aie",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "aie",
+      "tags": null,
+      "note": "What the game does with the flag has not been checked; the meaning is the community documentation's.",
+      "field": "settings.aie",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Makes mice shock-sensitive: falls from a height, strong bounces and being squeezed kill them.",
+      "status": "unverified",
+      "examples": [
+        [
+          "aie=\"\"",
+          "settings.aie",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.bh",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "bh",
+      "tags": null,
+      "note": "",
+      "field": "settings.upwardsCannonballs",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Lets cannonballs fly upwards (placed in the map or summoned by the shaman). Without it a cannonball's upward speed is set to 0.",
+      "status": "verified",
+      "examples": [
+        [
+          "bh=\"\"",
+          "settings.upwardsCannonballs",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.mgoc",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "mgoc",
+      "tags": null,
+      "note": "",
+      "field": "settings.shamanObjectsMass",
+      "type": "int",
+      "default": "none (objects keep their own mass)",
+      "rule": "`int`, whenever the attribute is present (an empty value gives 0).",
+      "meaning": "Mass given to every shaman object except type 32, summoned or placed in the map.",
+      "status": "verified",
+      "examples": [
+        [
+          "mgoc=\"7.9\"",
+          "settings.shamanObjectsMass",
+          7
+        ]
+      ]
+    },
+    {
+      "id": "P.Ca",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "Ca",
+      "tags": null,
+      "note": "",
+      "field": "settings.hideOffscreen",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Hides everything outside the 800x600 game area behind a frame in the room colour.",
+      "status": "verified",
+      "examples": [
+        [
+          "Ca=\"\"",
+          "settings.hideOffscreen",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.G",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "G",
+      "tags": null,
+      "note": "",
+      "field": "settings.wind, settings.gravity, settings.derived",
+      "type": "list<number>",
+      "default": "0,10",
+      "rule": "`presence`. Split on `,`: wind = `number` of field 1, gravity = `number` of field 2. A wind that is `NaN` becomes 0, a gravity that is `NaN` becomes 10. The wind is negated in a mirrored room.",
+      "meaning": "Wind (positive blows to the right) and gravity (default 10; negative turns it upside down).",
+      "status": "verified",
+      "examples": [
+        [
+          "G=\"1.5,12\"",
+          "settings.gravity",
+          12
+        ],
+        [
+          "G=\"x,3\"",
+          "settings.derived.wind",
+          0
+        ],
+        [
+          "G=\"1\"",
+          "settings.derived.gravity",
+          10
+        ]
+      ]
+    },
+    {
+      "id": "P.N",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "N",
+      "tags": null,
+      "note": "Whether the first number is a radius or a diameter, and what the second number selects, have not been checked in the game.",
+      "field": "settings.night",
+      "type": "list<number>",
+      "default": "off",
+      "rule": "`presence` turns night mode on. A non-empty value is split on `,`: one field sets the size, two fields the size and the type (both `number`); any other number of fields sets neither.",
+      "meaning": "Night mode: mice only see a small circle around them. First number: the size of the circle; second: who is in the dark (0 everyone, 1 the shaman, 2 the mice). Default `150,0`.",
+      "status": "unverified",
+      "examples": [
+        [
+          "N=\"250,1.5\"",
+          "settings.night.type",
+          1.5
+        ],
+        [
+          "N=\"250\"",
+          "settings.night.diameter",
+          250
+        ]
+      ]
+    },
+    {
+      "id": "P.C",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "C",
+      "tags": null,
+      "note": "The effect has not been checked in the game; the meaning is the community documentation's.",
+      "field": "settings.collisions",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Collision mode: mice collide with each other.",
+      "status": "unverified",
+      "examples": [
+        [
+          "C=\"\"",
+          "settings.collisions",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.A",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "A",
+      "tags": null,
+      "note": "",
+      "field": "settings.soulmate",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Soulmate mode: mice are tied in pairs. The game draws a heart near the top left corner.",
+      "status": "verified",
+      "examples": [
+        [
+          "A=\"\"",
+          "settings.soulmate",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.F",
+      "scope": "settings",
+      "doc": "settings#background-f",
+      "node": "P",
+      "name": "F",
+      "tags": null,
+      "note": "",
+      "field": "settings.backgroundImageId",
+      "type": "int",
+      "default": "none (no background)",
+      "rule": "`int`, whenever the attribute is present.",
+      "meaning": "Map background: the picture `$F_<id>`, drawn behind everything and stretched to the map size. `-1`: none; `-2`: the game picks one at random.",
+      "status": "verified",
+      "examples": [
+        [
+          "F=\"3.9\"",
+          "settings.backgroundImageId",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "P.P",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "P",
+      "tags": null,
+      "note": "The effect has not been checked in the game; the meaning is the community documentation's.",
+      "field": "settings.portals",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Lets the shaman summon portals.",
+      "status": "unverified",
+      "examples": [
+        [
+          "P=\"\"",
+          "settings.portals",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.shaman_tools",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "shaman_tools",
+      "tags": null,
+      "note": "",
+      "field": "settings.shamanTools",
+      "type": "list<int>",
+      "default": "none (the usual objects)",
+      "rule": "`truthy`. Split on `,`, each field `int`; zeros are dropped, and an empty result counts as no list.",
+      "meaning": "Replaces the objects the shaman can summon with these ids. The arrow (0) cannot be added, skills do not work, and a skinned object only shows for players who own the skin.",
+      "status": "verified",
+      "examples": [
+        [
+          "shaman_tools=\"0,6,bad,2\"",
+          "settings.shamanTools",
+          [
+            6,
+            2
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "P.defilante",
+      "scope": "settings",
+      "doc": "settings#defilante",
+      "node": "P",
+      "name": "defilante",
+      "tags": null,
+      "note": "",
+      "field": "settings.defilante",
+      "type": "list<number>",
+      "default": "off",
+      "rule": "`presence` turns defilante mode on. Split on `,`: start speed = `int` of field 1 (at least 0) / 36, acceleration = `number0` of field 2 / 360, maximum speed = `number0` of field 3 / 36, free scroll = field 4 is `one`.",
+      "meaning": "Defilante (scrolling race) mode. In this mode the objects 6, 32, 15 and 16 become markers instead of objects, and the width limit of a restricted map is 4800.",
+      "status": "verified",
+      "examples": [
+        [
+          "defilante=\"10,1,2,1\"",
+          "settings.defilante.freeScroll",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "P.L",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "L",
+      "tags": null,
+      "note": "",
+      "field": "settings.width",
+      "type": "int",
+      "default": "800",
+      "rule": "`truthy`, then `int`. An empty value keeps the default.",
+      "meaning": "Map width in pixels. The documented maximum is 1600 (4800 with `defilante`); the game enforces it only for restricted maps, and saved maps are often wider.",
+      "status": "verified",
+      "examples": [
+        [
+          "L=\"900.7\"",
+          "settings.width",
+          900
+        ]
+      ]
+    },
+    {
+      "id": "P.H",
+      "scope": "settings",
+      "doc": null,
+      "node": "P",
+      "name": "H",
+      "tags": null,
+      "note": "",
+      "field": "settings.height",
+      "type": "int",
+      "default": "400",
+      "rule": "`truthy`, then `int`. An empty value keeps the default.",
+      "meaning": "Map height in pixels. The documented maximum is 800; the game enforces it only for restricted maps.",
+      "status": "verified",
+      "examples": [
+        [
+          "H=\"500\"",
+          "settings.height",
+          500
+        ]
+      ]
+    },
+    {
+      "id": "P.DS",
+      "scope": "settings",
+      "doc": "settings#mouse-spawn-ds",
+      "node": "P",
+      "name": "DS",
+      "tags": null,
+      "note": "",
+      "field": "settings.miceSpawn",
+      "type": "custom",
+      "default": "none (the `DS` decoration, if any)",
+      "rule": "`truthy`. The value is `kind;payload` with exactly one `;`, otherwise it is ignored. `m;x1,y1,x2,y2,...`: up to 20 points (at most 40 numbers are read, an odd last number is dropped); `x;N`: X fixed at N, random Y; `y;N`: Y fixed at N, random X; `r;x,y,w,h`: a rectangle. All numbers `int`; other kinds are ignored.",
+      "meaning": "Mouse spawn points.",
+      "status": "verified",
+      "examples": [
+        [
+          "DS=\"r;1,2,3,4\"",
+          "settings.miceSpawn.height",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "P.D",
+      "scope": "settings",
+      "doc": "images#images-in-the-settings",
+      "node": "P",
+      "name": "D",
+      "tags": null,
+      "note": "",
+      "field": "settings.images.background",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. `#url,w,h`: one tiled bitmap; a value without a comma: one image at (0, 0); otherwise `;`-separated groups of `url,x,y,repeat,dx` tuples.",
+      "meaning": "Background images, drawn behind the grounds.",
+      "status": "verified",
+      "examples": [
+        [
+          "D=\"a.png,5,6,2,30\"",
+          "settings.images.background[0].repeatArg",
+          "30"
+        ]
+      ]
+    },
+    {
+      "id": "P.d",
+      "scope": "settings",
+      "doc": "images#images-in-the-settings",
+      "node": "P",
+      "name": "d",
+      "tags": null,
+      "note": "",
+      "field": "settings.images.foreground",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. A value without a comma: one image at (0, 0); otherwise `;`-separated groups, each a run of 4-field tuples `url,x,y,repeat`. The repeat offset is the fifth field of the last `D` tuple (a bug of the game).",
+      "meaning": "Foreground images, drawn over the grounds, the objects and the mice.",
+      "status": "verified",
+      "examples": [
+        [
+          "D=\"b.png,0,0,0,7\" d=\"a.png,1,2,3\"",
+          "settings.images.foreground[0].repeatArg",
+          "7"
+        ]
+      ]
+    },
+    {
+      "id": "P.APS",
+      "scope": "settings",
+      "doc": "images#images-in-the-settings",
+      "node": "P",
+      "name": "APS",
+      "tags": null,
+      "note": "",
+      "field": "settings.images.disappearing",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. `;`-separated groups; only a group of exactly 8 fields `url,mode,x,y,w,h,imageX,imageY` makes an image.",
+      "meaning": "Disappearing images: drawn whole at (imageX, imageY) in the top layer, they fade out while the player is inside the rectangle (x, y, w, h). Off in restricted maps.",
+      "status": "verified",
+      "examples": [
+        [
+          "APS=\"a.png,0,1,2,3,4,5,6\"",
+          "settings.images.disappearing[0].rect.right",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "P.ARPS",
+      "scope": "settings",
+      "doc": "images#images-in-the-settings",
+      "node": "P",
+      "name": "ARPS",
+      "tags": null,
+      "note": "",
+      "field": "settings.images.appearing",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. Same 8-field groups as `APS`.",
+      "meaning": "Appearing images: not shown at load; an image fades in, in the bottom layer, while the player is inside its rectangle, and fades out when they leave. Only in maps opened as official maps.",
+      "status": "verified",
+      "examples": [
+        [
+          "ARPS=\"a.png,1,10,20,30,40,5,6\"",
+          "settings.images.appearing[0].imagePosition.y",
+          6
+        ]
+      ]
+    },
+    {
+      "id": "P.IP",
+      "scope": "settings",
+      "doc": "images#images-in-the-settings",
+      "node": "P",
+      "name": "IP",
+      "tags": null,
+      "note": "",
+      "field": "settings.images.ip",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. `;`-separated groups; only a group of exactly 3 fields `url,x,y` makes an image.",
+      "meaning": "Images a server message shows for 5 seconds on a few event maps; not shown at load. Off in restricted maps.",
+      "status": "verified",
+      "examples": [
+        [
+          "IP=\"o.png,12,34\"",
+          "settings.images.ip[0].y",
+          34
+        ]
+      ]
+    },
+    {
+      "id": "S.T",
+      "scope": "ground",
+      "doc": "grounds#ground-types",
+      "node": "S",
+      "name": "T",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].type",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Ground type, 0 to 21 (see ground types). Other values are drawn like wood and get the default physics.",
+      "status": "verified",
+      "examples": [
+        [
+          "T=\"12.9\"",
+          "grounds[0].type",
+          12
+        ]
+      ]
+    },
+    {
+      "id": "S.X",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "X",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].x",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Horizontal position in pixels; the ground is centred on (X, Y).",
+      "status": "verified",
+      "examples": [
+        [
+          "X=\"-5.5\"",
+          "grounds[0].x",
+          -5
+        ]
+      ]
+    },
+    {
+      "id": "S.Y",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "Y",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].y",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Vertical position in pixels.",
+      "status": "verified",
+      "examples": [
+        [
+          "Y=\"7\"",
+          "grounds[0].y",
+          7
+        ]
+      ]
+    },
+    {
+      "id": "S.L",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "L",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].width, grounds[].derived.width",
+      "type": "int",
+      "default": "10",
+      "rule": "`int`, then kept between 10 and 4000 (`derived.width`; `width` is the written value).",
+      "meaning": "Width in pixels; for a circle (13) the radius.",
+      "status": "verified",
+      "examples": [
+        [
+          "L=\"300\"",
+          "grounds[0].width",
+          300
+        ],
+        [
+          "L=\"5\"",
+          "grounds[0].derived.width",
+          10
+        ],
+        [
+          "L=\"9000\"",
+          "grounds[0].derived.width",
+          4000
+        ],
+        [
+          "L=\"9000\"",
+          "grounds[0].width",
+          9000
+        ]
+      ]
+    },
+    {
+      "id": "S.H",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "H",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].height, grounds[].derived.height",
+      "type": "int",
+      "default": "10",
+      "rule": "`int`, then kept between 10 and 4000 like `L`.",
+      "meaning": "Height in pixels; a circle ignores it.",
+      "status": "verified",
+      "examples": [
+        [
+          "H=\"20\"",
+          "grounds[0].height",
+          20
+        ],
+        [
+          "H=\"0\"",
+          "grounds[0].derived.height",
+          10
+        ],
+        [
+          "H=\"4000\"",
+          "grounds[0].derived.height",
+          4000
+        ]
+      ]
+    },
+    {
+      "id": "S.name",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "name",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].name",
+      "type": "string",
+      "default": "none",
+      "rule": "The raw value.",
+      "meaning": "Name the ground is registered under; a galaxy ground (21) is found by this name through `target`.",
+      "status": "verified",
+      "examples": [
+        [
+          "name=\"door\"",
+          "grounds[0].name",
+          "door"
+        ]
+      ]
+    },
+    {
+      "id": "S.target",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "target",
+      "tags": null,
+      "note": "The game stores the value; what uses it has not been seen.",
+      "field": "grounds[].target",
+      "type": "string",
+      "default": "none",
+      "rule": "The raw value.",
+      "meaning": "Name of the ground a galaxy ground leads to.",
+      "status": "unverified",
+      "examples": [
+        [
+          "target=\"door\"",
+          "grounds[0].target",
+          "door"
+        ]
+      ]
+    },
+    {
+      "id": "S.nosync",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "nosync",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].nosync",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Disables synchronisation of a dynamic ground with the room.",
+      "status": "verified",
+      "examples": [
+        [
+          "nosync=\"\"",
+          "grounds[0].nosync",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.c",
+      "scope": "ground",
+      "doc": "grounds#collision",
+      "node": "S",
+      "name": "c",
+      "tags": null,
+      "note": "The collision masks are verified; which mask stands for mice and which for shaman objects is inferred.",
+      "field": "grounds[].collisionGroup (alias colorCode), grounds[].derived.collisionGroup, grounds[].derived.collision",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`; water (9) and cobweb (15) always use 5. Groups 0 and 1 collide with mice and objects (a cloud, 8, with group 0: objects only), 2 with objects only, 3 with mice only, anything else with nothing.",
+      "meaning": "Collision group: what the ground stops. The community documentation numbers the groups differently (1 all, 2 objects and grounds, 3 mice and objects, 4 nothing).",
+      "status": "unverified",
+      "examples": [
+        [
+          "c=\"3\"",
+          "grounds[0].collisionGroup",
+          3
+        ],
+        [
+          "c=\"2\"",
+          "grounds[0].derived.collision",
+          {
+            "mice": false,
+            "objects": true,
+            "category": 4
+          }
+        ],
+        [
+          "c=\"4\"",
+          "grounds[0].derived.collision",
+          {
+            "mice": false,
+            "objects": false,
+            "category": 0
+          }
+        ],
+        [
+          "T=\"8\"",
+          "grounds[0].derived.collision",
+          {
+            "mice": false,
+            "objects": true,
+            "category": 4
+          }
+        ],
+        [
+          "T=\"8\" c=\"1\"",
+          "grounds[0].derived.collision.category",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "S.v",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "v",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].vanish (alias variant)",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Time in milliseconds after which the ground disappears.",
+      "status": "verified",
+      "examples": [
+        [
+          "v=\"4\"",
+          "grounds[0].vanish",
+          4
+        ],
+        [
+          "v=\"4\"",
+          "grounds[0].variant",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "S.m",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "m",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].invisible (alias mobile)",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Hides the ground's picture; its physics stays.",
+      "status": "verified",
+      "examples": [
+        [
+          "m=\"\"",
+          "grounds[0].invisible",
+          true
+        ],
+        [
+          "m=\"\"",
+          "grounds[0].mobile",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.inputSpeedBonus",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "inputSpeedBonus",
+      "tags": null,
+      "note": "What the game does with it has not been seen.",
+      "field": "grounds[].inputSpeedBonus",
+      "type": "number",
+      "default": "none",
+      "rule": "`float`, whenever the attribute is present; `NaN` becomes 0.",
+      "meaning": "Speed bonus of a galaxy ground.",
+      "status": "unverified",
+      "examples": [
+        [
+          "inputSpeedBonus=\"2.5x\"",
+          "grounds[0].inputSpeedBonus",
+          2.5
+        ]
+      ]
+    },
+    {
+      "id": "S.outputSpeedBonus",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "outputSpeedBonus",
+      "tags": null,
+      "note": "What the game does with it has not been seen.",
+      "field": "grounds[].outputSpeedBonus",
+      "type": "number",
+      "default": "none",
+      "rule": "`float`, whenever the attribute is present; `NaN` becomes 0.",
+      "meaning": "Speed bonus of a galaxy ground.",
+      "status": "unverified",
+      "examples": [
+        [
+          "outputSpeedBonus=\"bad\"",
+          "grounds[0].outputSpeedBonus",
+          0
+        ]
+      ]
+    },
+    {
+      "id": "S.invertOutputPoint",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "invertOutputPoint",
+      "tags": null,
+      "note": "The game stores the flag; what uses it has not been seen.",
+      "field": "grounds[].invertOutputPoint",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Flag of a galaxy ground.",
+      "status": "unverified",
+      "examples": [
+        [
+          "invertOutputPoint=\"\"",
+          "grounds[0].invertOutputPoint",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.addInputGroundSpeed",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "addInputGroundSpeed",
+      "tags": null,
+      "note": "The game stores the flag; what uses it has not been seen.",
+      "field": "grounds[].addInputGroundSpeed",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Flag of a galaxy ground.",
+      "status": "unverified",
+      "examples": [
+        [
+          "addInputGroundSpeed=\"\"",
+          "grounds[0].addInputGroundSpeed",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.tint",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "tint",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].tint, grounds[].derived.tint",
+      "type": "color",
+      "default": "808080",
+      "rule": "`hex`, whenever the attribute is present; `NaN` becomes 0 and the value is kept as a 32-bit integer.",
+      "meaning": "Colour transform of the ground's picture: each channel is multiplied by the tint's channel / 128, so `808080` changes nothing.",
+      "status": "verified",
+      "examples": [
+        [
+          "tint=\"ff00aa\"",
+          "grounds[0].tint",
+          16711850
+        ]
+      ]
+    },
+    {
+      "id": "S.grav",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "grav",
+      "tags": null,
+      "note": "Follows from how the game builds a ground; not checked in the game.",
+      "field": "grounds[].gravity, grounds[].derived.gravityScale",
+      "type": "number",
+      "default": "1",
+      "rule": "`number`, whenever the attribute is present.",
+      "meaning": "Multiplies the gravity applied to the ground's own body. Only a dynamic ground has a body, so it does nothing on a static ground; it does not change gravity for mice.",
+      "status": "unverified",
+      "examples": [
+        [
+          "grav=\"0.5\"",
+          "grounds[0].derived.gravityScale",
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "S.col",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "col",
+      "tags": null,
+      "note": "What the physics does with the flag has not been seen.",
+      "field": "grounds[].touchCollision (alias collision)",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Touch-collision flag on the ground's shapes.",
+      "status": "unverified",
+      "examples": [
+        [
+          "col=\"\"",
+          "grounds[0].touchCollision",
+          true
+        ],
+        [
+          "col=\"\"",
+          "grounds[0].collision",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.lua",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "lua",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].lua (number), grounds[].luaRaw",
+      "type": "number",
+      "default": "none",
+      "rule": "`number`, whenever the attribute is present (`NaN` stays `NaN`).",
+      "meaning": "Id that identifies the ground in Lua.",
+      "status": "verified",
+      "examples": [
+        [
+          "lua=\"12.9\"",
+          "grounds[0].lua",
+          12.9
+        ]
+      ]
+    },
+    {
+      "id": "S.contact",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "contact",
+      "tags": null,
+      "note": "What the physics does with it has not been seen.",
+      "field": "grounds[].contact",
+      "type": "int",
+      "default": "none",
+      "rule": "`int`, whenever the attribute is present.",
+      "meaning": "Contact number copied to the ground's shapes.",
+      "status": "unverified",
+      "examples": [
+        [
+          "contact=\"12.9\"",
+          "grounds[0].contact",
+          12
+        ]
+      ]
+    },
+    {
+      "id": "S.friction",
+      "scope": "ground",
+      "doc": "grounds#honey",
+      "node": "S",
+      "name": "friction",
+      "tags": null,
+      "note": "The sticky and slippery reading is a third-party editor's; the game's honey code has not been seen.",
+      "field": "grounds[].friction (raw pair), grounds[].honey",
+      "type": "list<number>",
+      "default": "none (honey, type 20: `20,4`)",
+      "rule": "`truthy`. Split on `,`: two `number` fields (`NaN` when missing). When the first is not 0 the ground is honey with these two numbers.",
+      "meaning": "Not the friction coefficient (that is field 3 of `P`): makes the ground honey. Sticky when the first number is 0 or more (strength 5 x first), slippery otherwise (strength -first); duration first / second.",
+      "status": "unverified",
+      "examples": [
+        [
+          "friction=\"1.5,2.5\"",
+          "grounds[0].friction.y",
+          2.5
+        ],
+        [
+          "friction=\"20,4\"",
+          "grounds[0].honey",
+          {
+            "type": "sticky",
+            "value": 100,
+            "duration": 5
+          }
+        ],
+        [
+          "friction=\"-3,1\"",
+          "grounds[0].honey",
+          {
+            "type": "slippery",
+            "value": 3,
+            "duration": -3
+          }
+        ],
+        [
+          "friction=\"x\"",
+          "grounds[0].honey.type",
+          "glitched"
+        ]
+      ]
+    },
+    {
+      "id": "S.i",
+      "scope": "ground",
+      "doc": "images#ground-image-i",
+      "node": "S",
+      "name": "i",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].image (raw), grounds[].imageParts",
+      "type": "custom",
+      "default": "none",
+      "rule": "Whenever the attribute is present: split on `,`, at least 3 fields: x = `int` of field 1, y = `int` of field 2, URL = field 3 (a URL containing a comma is cut).",
+      "meaning": "Image that replaces the ground's picture, placed at (x, y) from the ground's top left corner. Off in restricted maps.",
+      "status": "verified",
+      "examples": [
+        [
+          "i=\"3.9,-4,tex.png\"",
+          "grounds[0].imageParts",
+          {
+            "x": 3,
+            "y": -4,
+            "url": "tex.png",
+            "fields": [
+              "3.9",
+              "-4",
+              "tex.png"
+            ]
+          }
+        ],
+        [
+          "i=\"tex.png\"",
+          "grounds[0].imageParts",
+          null
+        ],
+        [
+          "i=\"1,2\"",
+          "grounds[0].imageParts",
+          null
+        ],
+        [
+          "i=\"1,2,a.png,extra\"",
+          "grounds[0].imageParts.url",
+          "a.png"
+        ]
+      ]
+    },
+    {
+      "id": "S.P",
+      "scope": "ground",
+      "doc": "grounds#physics-p",
+      "node": "S",
+      "name": "P",
+      "tags": null,
+      "note": "That fields 3 and 4 are friction and restitution is inferred from three agreeing sources; the physics code that reads them has not been seen.",
+      "field": "grounds[].physics, grounds[].derived.physics",
+      "type": "list<number>",
+      "default": "the type's physics (see ground types)",
+      "rule": "`truthy`; ignored for water (9). Split on `,`: field 1 is `one` (dynamic), 2 mass, 3 friction, 4 restitution, 5 angle in degrees, 6 is `one` (fixed rotation), 7 linear damping, 8 angular damping. The numbers are `number`, `NaN` when missing.",
+      "meaning": "Physics: dynamic, mass, friction, restitution, angle, fixed rotation, linear and angular damping. Mass, fixed rotation and the dampings only act on dynamic grounds; a negative mass makes a dynamic ground immovable.",
+      "status": "unverified",
+      "examples": [
+        [
+          "P=\"1,7.5,0.9,0.1,30,1,0.4,0.6\"",
+          "grounds[0].physics.friction",
+          0.9
+        ],
+        [
+          "P=\"1\"",
+          "grounds[0].derived.physics.normalized.friction",
+          0.2
+        ],
+        [
+          "T=\"2\"",
+          "grounds[0].derived.physics.defaults.restitution",
+          1.2
+        ],
+        [
+          "T=\"1\" P=\"0,0,-1,-2\"",
+          "grounds[0].derived.physics.normalized.restitution",
+          0
+        ]
+      ]
+    },
+    {
+      "id": "S.o",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "o",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].color",
+      "type": "color",
+      "default": "none (white)",
+      "rule": "`truthy`, then `hexcolor`.",
+      "meaning": "Colour of a rectangle (12) or circle (13) ground; other types ignore it. Without it those two are white.",
+      "status": "verified",
+      "examples": [
+        [
+          "o=\"112233\"",
+          "grounds[0].color",
+          1122867
+        ]
+      ]
+    },
+    {
+      "id": "S.N",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "N",
+      "tags": null,
+      "note": "",
+      "field": "grounds[].foreground, grounds[].derived.foreground",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Draws the ground in front of the mice. Water, cobweb and galaxy (9, 15, 21) are always in front.",
+      "status": "verified",
+      "examples": [
+        [
+          "N=\"\"",
+          "grounds[0].foreground",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "S.archAcc",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "archAcc",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.archAcc",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area physics value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" archAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics.archAcc",
+          2.5
+        ],
+        [
+          "T=\"15\" archAcc=\"0\"",
+          "grounds[0].derived.areaPhysics.archAcc",
+          0
+        ],
+        [
+          "T=\"0\" archAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.archMax",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "archMax",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.archMax",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area physics value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" archMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics.archMax",
+          2.5
+        ],
+        [
+          "T=\"15\" archMax=\"0\"",
+          "grounds[0].derived.areaPhysics.archMax",
+          0
+        ],
+        [
+          "T=\"0\" archMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.archCheeseMax",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "archCheeseMax",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.archCheeseMax",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area physics value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" archCheeseMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics.archCheeseMax",
+          2.5
+        ],
+        [
+          "T=\"15\" archCheeseMax=\"0\"",
+          "grounds[0].derived.areaPhysics.archCheeseMax",
+          0
+        ],
+        [
+          "T=\"0\" archCheeseMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.linDampAcc",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "linDampAcc",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.linDampAcc",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area linear-damping value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" linDampAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics.linDampAcc",
+          2.5
+        ],
+        [
+          "T=\"15\" linDampAcc=\"0\"",
+          "grounds[0].derived.areaPhysics.linDampAcc",
+          0
+        ],
+        [
+          "T=\"0\" linDampAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.linDampMax",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "linDampMax",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.linDampMax",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area linear-damping value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" linDampMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics.linDampMax",
+          2.5
+        ],
+        [
+          "T=\"15\" linDampMax=\"0\"",
+          "grounds[0].derived.areaPhysics.linDampMax",
+          0
+        ],
+        [
+          "T=\"0\" linDampMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.angDampAcc",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "angDampAcc",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.angDampAcc",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area angular-damping value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" angDampAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics.angDampAcc",
+          2.5
+        ],
+        [
+          "T=\"15\" angDampAcc=\"0\"",
+          "grounds[0].derived.areaPhysics.angDampAcc",
+          0
+        ],
+        [
+          "T=\"0\" angDampAcc=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "S.angDampMax",
+      "scope": "ground",
+      "doc": null,
+      "node": "S",
+      "name": "angDampMax",
+      "tags": null,
+      "note": "The unit and the effect in the game are unknown.",
+      "field": "grounds[].derived.areaPhysics.angDampMax",
+      "type": "number",
+      "default": "per type (see ground types)",
+      "rule": "Water (`T=9`) and cobweb (`T=15`) only: `truthy`, then `number`. Other types ignore it.",
+      "meaning": "Area angular-damping value of water or cobweb.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"9\" angDampMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics.angDampMax",
+          2.5
+        ],
+        [
+          "T=\"15\" angDampMax=\"0\"",
+          "grounds[0].derived.areaPhysics.angDampMax",
+          0
+        ],
+        [
+          "T=\"0\" angDampMax=\"2.5\"",
+          "grounds[0].derived.areaPhysics",
+          null
+        ]
+      ]
+    },
+    {
+      "id": "D/*.X",
+      "scope": "decoration",
+      "doc": null,
+      "node": "D/*",
+      "name": "X",
+      "tags": [
+        "any"
+      ],
+      "note": "",
+      "field": "decorations[].x",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Horizontal position.",
+      "status": "verified",
+      "examples": [
+        [
+          "X=\"5.9\"",
+          "decorations[0].x",
+          5
+        ]
+      ]
+    },
+    {
+      "id": "D/*.Y",
+      "scope": "decoration",
+      "doc": null,
+      "node": "D/*",
+      "name": "Y",
+      "tags": [
+        "any"
+      ],
+      "note": "",
+      "field": "decorations[].y",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Vertical position.",
+      "status": "verified",
+      "examples": [
+        [
+          "Y=\"-3\"",
+          "decorations[0].y",
+          -3
+        ]
+      ]
+    },
+    {
+      "id": "D/T.D",
+      "scope": "decoration",
+      "doc": "decorations#holes-and-cheese",
+      "node": "D/T",
+      "name": "D",
+      "tags": [
+        "T",
+        "F"
+      ],
+      "note": "",
+      "field": "decorations[].foreground",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Draws a hole over the grounds, or a cheese over the mice.",
+      "status": "verified",
+      "examples": [
+        [
+          "D=\"\"",
+          "decorations[0].foreground",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "D/T.CT",
+      "scope": "decoration",
+      "doc": "decorations#holes-and-cheese",
+      "node": "D/T",
+      "name": "CT",
+      "tags": [
+        "T"
+      ],
+      "note": "",
+      "field": "decorations[].holeColor (alias holeType)",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`: 1 and 2 are colours, anything else is none.",
+      "meaning": "Hole colour: 1 gives the hole a cyan glow, 2 a pink one. Which mice may enter is decided by the server.",
+      "status": "verified",
+      "examples": [
+        [
+          "CT=\"2\"",
+          "decorations[0].holeColor",
+          2
+        ],
+        [
+          "CT=\"1\"",
+          "decorations[0].holeColor",
+          1
+        ]
+      ]
+    },
+    {
+      "id": "D/P.T",
+      "scope": "decoration",
+      "doc": null,
+      "node": "D/P",
+      "name": "T",
+      "tags": [
+        "P"
+      ],
+      "note": "",
+      "field": "decorations[].type",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Decoration id: the picture `$P_<T>`.",
+      "status": "verified",
+      "examples": [
+        [
+          "T=\"42.5\" P=\"0,0\"",
+          "decorations[0].type",
+          42
+        ]
+      ]
+    },
+    {
+      "id": "D/P.P",
+      "scope": "decoration",
+      "doc": "decorations#decorations-p",
+      "node": "D/P",
+      "name": "P",
+      "tags": [
+        "P"
+      ],
+      "note": "The random flip follows the game's code; being random, it cannot be compared with the game.",
+      "field": "decorations[].foreground, decorations[].inversionCode, decorations[].reverse",
+      "type": "list<int>",
+      "default": "required",
+      "rule": "Required: a `P` decoration without it makes the map fail to load. Split on `,`: field 1 is `one` (foreground); field 2 `int`: 1 always flipped, 2 flipped at random (one time in two), anything else not flipped. In a mirrored room the code becomes 0 when it is above 0, otherwise 1.",
+      "meaning": "Foreground flag and horizontal flip.",
+      "status": "unverified",
+      "examples": [
+        [
+          "T=\"1\" P=\"1,2\"",
+          "decorations[0].reverse",
+          "random"
+        ]
+      ]
+    },
+    {
+      "id": "D/P.C",
+      "scope": "decoration",
+      "doc": "decorations#decorations-p",
+      "node": "D/P",
+      "name": "C",
+      "tags": [
+        "P"
+      ],
+      "note": "",
+      "field": "decorations[].colors",
+      "type": "list<string>",
+      "default": "none",
+      "rule": "`truthy`, split on `,`.",
+      "meaning": "Hex colours of the decoration's colourable parts, in order. A part with no colour in the list is black; without the attribute the parts keep their library colour.",
+      "status": "verified",
+      "examples": [
+        [
+          "T=\"1\" P=\"0,0\" C=\"ABCDEF,123456\"",
+          "decorations[0].colors",
+          [
+            "ABCDEF",
+            "123456"
+          ]
+        ]
+      ]
+    },
+    {
+      "id": "O.C",
+      "scope": "object",
+      "doc": "objects#type-and-skin-c",
+      "node": "O",
+      "name": "C",
+      "tags": null,
+      "note": "",
+      "field": "objects[].type, objects[].baseType, objects[].skin, objects[].clientFiltered",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`; the element's own name is not read. Above 99 the number packs a base type and a skin (see objects).",
+      "meaning": "Object type.",
+      "status": "verified",
+      "examples": [
+        [
+          "C=\"11.5\"",
+          "objects[0].type",
+          11
+        ],
+        [
+          "C=\"1002\"",
+          "objects[0].baseType",
+          10
+        ],
+        [
+          "C=\"1002\"",
+          "objects[0].skin",
+          2
+        ],
+        [
+          "C=\"10305\"",
+          "objects[0].baseType",
+          0
+        ],
+        [
+          "C=\"94\"",
+          "objects[0].clientFiltered",
+          true
+        ],
+        [
+          "C=\"9401\"",
+          "objects[0].clientFiltered",
+          true
+        ],
+        [
+          "C=\"2\"",
+          "objects[0].clientFiltered",
+          false
+        ]
+      ]
+    },
+    {
+      "id": "O.X",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "X",
+      "tags": null,
+      "note": "",
+      "field": "objects[].x",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Horizontal position.",
+      "status": "verified",
+      "examples": [
+        [
+          "X=\"9.9\"",
+          "objects[0].x",
+          9
+        ]
+      ]
+    },
+    {
+      "id": "O.Y",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "Y",
+      "tags": null,
+      "note": "",
+      "field": "objects[].y",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Vertical position.",
+      "status": "verified",
+      "examples": [
+        [
+          "Y=\"8.1\"",
+          "objects[0].y",
+          8
+        ]
+      ]
+    },
+    {
+      "id": "O.nosync",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "nosync",
+      "tags": null,
+      "note": "",
+      "field": "objects[].nosync",
+      "type": "bool",
+      "default": "false",
+      "rule": "`presence`.",
+      "meaning": "Disables room synchronisation of the object.",
+      "status": "verified",
+      "examples": [
+        [
+          "nosync=\"\"",
+          "objects[0].nosync",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "O.Mv",
+      "scope": "object",
+      "doc": "objects#nails",
+      "node": "O",
+      "name": "Mv",
+      "tags": null,
+      "note": "",
+      "field": "objects[].speed",
+      "type": "number",
+      "default": "none",
+      "rule": "`truthy`, then `number`. Negated in a mirrored room.",
+      "meaning": "Rotation speed of a nail (11 to 16; positive turns anticlockwise).",
+      "status": "verified",
+      "examples": [
+        [
+          "Mv=\"2.5\"",
+          "objects[0].speed",
+          2.5
+        ]
+      ]
+    },
+    {
+      "id": "O.Mp",
+      "scope": "object",
+      "doc": "objects#nails",
+      "node": "O",
+      "name": "Mp",
+      "tags": null,
+      "note": "",
+      "field": "objects[].power",
+      "type": "number",
+      "default": "none",
+      "rule": "Read only when `Mv` is used: `number`.",
+      "meaning": "Rotation power of a nail (11 to 16).",
+      "status": "verified",
+      "examples": [
+        [
+          "Mv=\"1\" Mp=\"3.5\"",
+          "objects[0].power",
+          3.5
+        ]
+      ]
+    },
+    {
+      "id": "O.P",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "P",
+      "tags": null,
+      "note": "",
+      "field": "objects[].rotation, objects[].ghost",
+      "type": "list<int>",
+      "default": "0,0",
+      "rule": "`truthy`. Split on `,`: field 1 `int` is the angle in degrees, clockwise (negated in a mirrored room); with a second field, `1` makes the object a ghost.",
+      "meaning": "Angle and ghost flag. A ghost does not collide with mice and is drawn translucent.",
+      "status": "verified",
+      "examples": [
+        [
+          "P=\"45,1\"",
+          "objects[0].ghost",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "O.stop",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "stop",
+      "tags": null,
+      "note": "",
+      "field": "objects[].stop",
+      "type": "bool",
+      "default": "false",
+      "rule": "Not read by the game. Lua module convention: `presence`.",
+      "meaning": "Used by the Lua module `parkour`.",
+      "status": "extension",
+      "examples": [
+        [
+          "stop=\"\"",
+          "objects[0].stop",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "O.size",
+      "scope": "object",
+      "doc": null,
+      "node": "O",
+      "name": "size",
+      "tags": null,
+      "note": "",
+      "field": "objects[].size",
+      "type": "number",
+      "default": "none",
+      "rule": "Not read by the game. Lua module convention: `number`.",
+      "meaning": "Used by the Lua module `parkour`.",
+      "status": "extension",
+      "examples": [
+        [
+          "size=\"2.5\"",
+          "objects[0].size",
+          2.5
+        ]
+      ]
+    },
+    {
+      "id": "L/*.M1",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/*",
+      "name": "M1",
+      "tags": [
+        "JD",
+        "JP",
+        "JPL",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].m1",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "First joined ground: its index in the map's ground list.",
+      "status": "verified",
+      "examples": [
+        [
+          "M1=\"3.9\"",
+          "joints[0].m1",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "L/*.M2",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/*",
+      "name": "M2",
+      "tags": [
+        "JD",
+        "JP",
+        "JPL",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].m2",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`.",
+      "meaning": "Second joined ground.",
+      "status": "verified",
+      "examples": [
+        [
+          "M2=\"4\"",
+          "joints[0].m2",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "L/*.P1",
+      "scope": "joint",
+      "doc": "joints#anchors",
+      "node": "L/*",
+      "name": "P1",
+      "tags": [
+        "JD",
+        "JP",
+        "JPL",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].p1",
+      "type": "point",
+      "default": "none (a default anchor, see joints)",
+      "rule": "Split on `,`, each field `int`.",
+      "meaning": "First anchor point (x,y).",
+      "status": "verified",
+      "examples": [
+        [
+          "P1=\"10.5,20\"",
+          "joints[0].p1.x",
+          10
+        ]
+      ]
+    },
+    {
+      "id": "L/JD.P2",
+      "scope": "joint",
+      "doc": "joints#anchors",
+      "node": "L/JD",
+      "name": "P2",
+      "tags": [
+        "JD",
+        "JPL"
+      ],
+      "note": "",
+      "field": "joints[].p2",
+      "type": "point",
+      "default": "none (a default anchor, see joints)",
+      "rule": "Like `P1`.",
+      "meaning": "Second anchor point (x,y).",
+      "status": "verified",
+      "examples": [
+        [
+          "P2=\"1,2\"",
+          "joints[0].p2.y",
+          2
+        ]
+      ]
+    },
+    {
+      "id": "L/JD.HZ",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JD",
+      "name": "HZ",
+      "tags": [
+        "JD"
+      ],
+      "note": "Sources disagree on the name: a third-party editor calls it frequency, the community documentation damping or tautness.",
+      "field": "joints[].frequency (alias hz)",
+      "type": "number",
+      "default": "0",
+      "rule": "`number0`.",
+      "meaning": "Spring frequency of a distance joint.",
+      "status": "unverified",
+      "examples": [
+        [
+          "HZ=\"bad\"",
+          "joints[0].frequency",
+          0
+        ],
+        [
+          "HZ=\"3\"",
+          "joints[0].hz",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "L/JD.AMP",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JD",
+      "name": "AMP",
+      "tags": [
+        "JD"
+      ],
+      "note": "Sources disagree on the name: a third-party editor calls it damping, the community documentation elasticity.",
+      "field": "joints[].damping (alias amplitude)",
+      "type": "number",
+      "default": "0",
+      "rule": "`number0`.",
+      "meaning": "Damping of a distance joint.",
+      "status": "unverified",
+      "examples": [
+        [
+          "AMP=\"2e3\"",
+          "joints[0].damping",
+          2000
+        ],
+        [
+          "AMP=\"2.5\"",
+          "joints[0].amplitude",
+          2.5
+        ]
+      ]
+    },
+    {
+      "id": "L/JP.AXIS",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JP",
+      "name": "AXIS",
+      "tags": [
+        "JP"
+      ],
+      "note": "",
+      "field": "joints[].axis",
+      "type": "point",
+      "default": "none",
+      "rule": "Split on `,`, two `int` fields; x is negated in a mirrored room.",
+      "meaning": "Axis of a prismatic joint.",
+      "status": "verified",
+      "examples": [
+        [
+          "AXIS=\"1.9,0\"",
+          "joints[0].axis.x",
+          1
+        ]
+      ]
+    },
+    {
+      "id": "L/JP.A",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JP",
+      "name": "A",
+      "tags": [
+        "JP"
+      ],
+      "note": "",
+      "field": "joints[].angle",
+      "type": "number",
+      "default": "0",
+      "rule": "`number0`; negated in a mirrored room.",
+      "meaning": "Angle of a prismatic joint.",
+      "status": "verified",
+      "examples": [
+        [
+          "A=\"1.0472\"",
+          "joints[0].angle",
+          1.0472
+        ]
+      ]
+    },
+    {
+      "id": "L/JP.LIM1",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JP",
+      "name": "LIM1",
+      "tags": [
+        "JP",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].lim1",
+      "type": "number",
+      "default": "none",
+      "rule": "`number`.",
+      "meaning": "First limit.",
+      "status": "verified",
+      "examples": [
+        [
+          "LIM1=\"-2\"",
+          "joints[0].lim1",
+          -2
+        ]
+      ]
+    },
+    {
+      "id": "L/JP.LIM2",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JP",
+      "name": "LIM2",
+      "tags": [
+        "JP",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].lim2",
+      "type": "number",
+      "default": "none",
+      "rule": "`number`.",
+      "meaning": "Second limit.",
+      "status": "verified",
+      "examples": [
+        [
+          "LIM2=\"3\"",
+          "joints[0].lim2",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "L/JP.MV",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JP",
+      "name": "MV",
+      "tags": [
+        "JP",
+        "JR"
+      ],
+      "note": "",
+      "field": "joints[].motor",
+      "type": "list<number>",
+      "default": "none",
+      "rule": "`truthy`. Split on `,`: two `number` fields, power and speed; a `JR` negates the speed in a mirrored room.",
+      "meaning": "Motor power and speed.",
+      "status": "verified",
+      "examples": [
+        [
+          "MV=\"5,-2\"",
+          "joints[0].motor.speed",
+          -2
+        ]
+      ]
+    },
+    {
+      "id": "L/JPL.P3",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JPL",
+      "name": "P3",
+      "tags": [
+        "JPL"
+      ],
+      "note": "",
+      "field": "joints[].p3",
+      "type": "point",
+      "default": "none",
+      "rule": "Like `P1`.",
+      "meaning": "First ground anchor of a pulley.",
+      "status": "verified",
+      "examples": [
+        [
+          "P3=\"7,8\"",
+          "joints[0].p3.x",
+          7
+        ]
+      ]
+    },
+    {
+      "id": "L/JPL.P4",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JPL",
+      "name": "P4",
+      "tags": [
+        "JPL"
+      ],
+      "note": "",
+      "field": "joints[].p4",
+      "type": "point",
+      "default": "none",
+      "rule": "Like `P1`.",
+      "meaning": "Second ground anchor of a pulley.",
+      "status": "verified",
+      "examples": [
+        [
+          "P4=\"9,10\"",
+          "joints[0].p4.y",
+          10
+        ]
+      ]
+    },
+    {
+      "id": "L/JPL.R",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/JPL",
+      "name": "R",
+      "tags": [
+        "JPL"
+      ],
+      "note": "",
+      "field": "joints[].ratio",
+      "type": "number",
+      "default": "1",
+      "rule": "`number`; `NaN` becomes 1.",
+      "meaning": "Pulley ratio.",
+      "status": "verified",
+      "examples": [
+        [
+          "R=\"bad\"",
+          "joints[0].ratio",
+          1
+        ]
+      ]
+    },
+    {
+      "id": "L/*.c",
+      "scope": "joint",
+      "doc": "joints#style-c",
+      "node": "L/*",
+      "name": "c",
+      "tags": [
+        "any"
+      ],
+      "note": "That a child which is not a joint styles the previous joint follows the game's code; it has not been checked in the game.",
+      "field": "joints[].style",
+      "type": "custom",
+      "default": "none (the joint is invisible)",
+      "rule": "`truthy`. Split on `,`: colour `hexcolor`, thickness `int` (default 1), alpha `number0` (default 1), foreground is `one` (default no). Each field is read only when the value has that many. On a child of `L` that is not a joint it applies to the previous joint.",
+      "meaning": "Look of the joint line: colour, thickness, alpha 0 to 1, foreground flag. A joint without it is invisible.",
+      "status": "unverified",
+      "examples": [
+        [
+          "c=\"ff0000,3,.25,1\"",
+          "joints[0].style.thickness",
+          3
+        ]
+      ]
+    },
+    {
+      "id": "L/*.lua",
+      "scope": "joint",
+      "doc": null,
+      "node": "L/*",
+      "name": "lua",
+      "tags": [
+        "any"
+      ],
+      "note": "That a child which is not a joint changes the previous joint follows the game's code; it has not been checked in the game.",
+      "field": "joints[].lua (raw string), joints[].clientLuaId",
+      "type": "int",
+      "default": "0",
+      "rule": "`int`, whenever the attribute is present. On a child of `L` that is not a joint it applies to the previous joint; before any joint it makes the map fail to load.",
+      "meaning": "Lua id of the joint.",
+      "status": "unverified",
+      "examples": [
+        [
+          "lua=\"12.9\"",
+          "joints[0].clientLuaId",
+          12
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.id",
+      "scope": "particle",
+      "doc": null,
+      "node": "particles/*",
+      "name": "id",
+      "tags": null,
+      "note": "",
+      "field": "particles[].id, particles[].idValue, particles[].idIsHex, particles[].clientCreated",
+      "type": "custom",
+      "default": "none (no particle)",
+      "rule": "Empty or absent: the particle is not created. `#rrggbb`: a coloured particle (`hex`); otherwise `int`, an index into the game's particle list.",
+      "meaning": "Particle effect.",
+      "status": "verified",
+      "examples": [
+        [
+          "id=\"#ff\"",
+          "particles[0].idValue",
+          255
+        ],
+        [
+          "id=\"7.9\"",
+          "particles[0].idValue",
+          7
+        ],
+        [
+          "id=\"\"",
+          "particles[0].clientCreated",
+          false
+        ],
+        [
+          "id=\"3\"",
+          "particles[0].clientCreated",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.img",
+      "scope": "particle",
+      "doc": "images#image-urls",
+      "node": "particles/*",
+      "name": "img",
+      "tags": null,
+      "note": "",
+      "field": "particles[].image",
+      "type": "string",
+      "default": "none",
+      "rule": "Whenever the attribute is present: an image URL (see images).",
+      "meaning": "Image of the particle, centred on its origin.",
+      "status": "verified",
+      "examples": [
+        [
+          "img=\"x.png\"",
+          "particles[0].image",
+          "x.png"
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.dur",
+      "scope": "particle",
+      "doc": null,
+      "node": "particles/*",
+      "name": "dur",
+      "tags": null,
+      "note": "",
+      "field": "particles[].duration, particles[].derived.duration",
+      "type": "int",
+      "default": "0",
+      "rule": "`int` (absent gives 0), then at most 10000.",
+      "meaning": "Duration in milliseconds.",
+      "status": "verified",
+      "examples": [
+        [
+          "dur=\"12000\"",
+          "particles[0].duration",
+          12000
+        ],
+        [
+          "dur=\"12000\"",
+          "particles[0].derived.duration",
+          10000
+        ],
+        [
+          "dur=\"500\"",
+          "particles[0].derived.duration",
+          500
+        ],
+        [
+          "dur=\"-5\"",
+          "particles[0].derived.duration",
+          -5
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.int",
+      "scope": "particle",
+      "doc": null,
+      "node": "particles/*",
+      "name": "int",
+      "tags": null,
+      "note": "",
+      "field": "particles[].interval",
+      "type": "int",
+      "default": "0",
+      "rule": "`int` (absent gives 0).",
+      "meaning": "Interval between emissions in milliseconds.",
+      "status": "verified",
+      "examples": [
+        [
+          "int=\"150.5\"",
+          "particles[0].interval",
+          150
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.loop",
+      "scope": "particle",
+      "doc": null,
+      "node": "particles/*",
+      "name": "loop",
+      "tags": null,
+      "note": "",
+      "field": "particles[].loop",
+      "type": "bool",
+      "default": "false",
+      "rule": "`one`.",
+      "meaning": "Repeats the effect.",
+      "status": "verified",
+      "examples": [
+        [
+          "loop=\"1\"",
+          "particles[0].loop",
+          true
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.ori",
+      "scope": "particle",
+      "doc": null,
+      "node": "particles/*",
+      "name": "ori",
+      "tags": null,
+      "note": "",
+      "field": "particles[].orientation",
+      "type": "point",
+      "default": "none",
+      "rule": "`truthy`. Split on `,`: two `int` fields.",
+      "meaning": "Orientation (x,y).",
+      "status": "verified",
+      "examples": [
+        [
+          "ori=\"3,4\"",
+          "particles[0].orientation.y",
+          4
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.sp",
+      "scope": "particle",
+      "doc": "particles",
+      "node": "particles/*",
+      "name": "sp",
+      "tags": null,
+      "note": "The load failure follows the game's code; no map with particles has been checked in the game.",
+      "field": "particles[].speed",
+      "type": "custom",
+      "default": "none",
+      "rule": "`truthy`. Split on `;` into two groups of `number` pairs; a pair with one number uses it twice. The game decides whether a group exists from the length of the whole value, not from the number of groups: a value of two characters or more without `;` makes the map fail to load.",
+      "meaning": "Speed: two (x,y) pairs.",
+      "status": "unverified",
+      "examples": [
+        [
+          "sp=\"1,2;3\"",
+          "particles[0].speed.second.second",
+          3
+        ],
+        [
+          "sp=\"1,2\"",
+          "particles[0].speed.secondGroupMissing",
+          true
+        ],
+        [
+          "sp=\"5\"",
+          "particles[0].speed.secondGroupMissing",
+          false
+        ],
+        [
+          "sp=\"1,2;3,4\"",
+          "particles[0].speed.secondGroupMissing",
+          false
+        ]
+      ]
+    },
+    {
+      "id": "particles/*.acc",
+      "scope": "particle",
+      "doc": "particles",
+      "node": "particles/*",
+      "name": "acc",
+      "tags": null,
+      "note": "The load failure follows the game's code; no map with particles has been checked in the game.",
+      "field": "particles[].acceleration",
+      "type": "custom",
+      "default": "none",
+      "rule": "Like `sp`.",
+      "meaning": "Acceleration: two (x,y) pairs.",
+      "status": "unverified",
+      "examples": [
+        [
+          "acc=\"5;6\"",
+          "particles[0].acceleration.first.second",
+          5
+        ],
+        [
+          "acc=\"5,1\"",
+          "particles[0].acceleration.secondGroupMissing",
+          true
+        ]
+      ]
+    }
+  ],
+  "coercions": [
+    {
+      "name": "int",
+      "effect": "Whole number. Leading and trailing spaces are ignored, `0x` hex and exponents are read, the fraction is cut off (towards zero) and the result wraps around at 32 bits. Anything that is not a number, an empty value and an absent attribute give 0.",
+      "examples": [
+        [
+          "5.9",
+          5
+        ],
+        [
+          "-5.9",
+          -5
+        ],
+        [
+          "0x10",
+          16
+        ],
+        [
+          "3e2",
+          300
+        ],
+        [
+          " 200",
+          200
+        ],
+        [
+          "4294967346",
+          50
+        ],
+        [
+          "12px",
+          0
+        ],
+        [
+          "",
+          0
+        ],
+        [
+          null,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "number",
+      "effect": "Decimal number. Spaces around it are ignored, `0x` hex, exponents and `Infinity` are read. An empty value is 0; an absent attribute or text that is not a number is `NaN` (the rule says what replaces it). `0b`, `0o` and `_` separators are not numbers.",
+      "examples": [
+        [
+          "2.5",
+          2.5
+        ],
+        [
+          "1e1",
+          10
+        ],
+        [
+          "0x10",
+          16
+        ],
+        [
+          "",
+          0
+        ],
+        [
+          "1e1x",
+          "NaN"
+        ],
+        [
+          "0b11",
+          "NaN"
+        ],
+        [
+          null,
+          "NaN"
+        ]
+      ]
+    },
+    {
+      "name": "number0",
+      "effect": "`number`, with `NaN` replaced by 0.",
+      "examples": [
+        [
+          "2e3",
+          2000
+        ],
+        [
+          "bad",
+          0
+        ],
+        [
+          null,
+          0
+        ]
+      ]
+    },
+    {
+      "name": "float",
+      "effect": "The number at the start of the value, ignoring what follows it (`2.5x` is 2.5); `NaN` when the value does not start with a number.",
+      "examples": [
+        [
+          "2.5x",
+          2.5
+        ],
+        [
+          "bad",
+          "NaN"
+        ]
+      ]
+    },
+    {
+      "name": "hex",
+      "effect": "Hexadecimal number: leading spaces and a `0x` prefix are skipped, reading stops at the first character that is not a hex digit, and `NaN` when there is none (the rule says what replaces it).",
+      "examples": [
+        [
+          "ff00aa",
+          16711850
+        ],
+        [
+          "0xFF8080",
+          16744576
+        ],
+        [
+          " FF8080",
+          16744576
+        ],
+        [
+          "FF80zz",
+          65408
+        ],
+        [
+          "#FF8080",
+          "NaN"
+        ]
+      ]
+    },
+    {
+      "name": "hexcolor",
+      "effect": "`int` of `0x` followed by the value: a hex colour written without `#`. Anything that is not hex gives 0 (black).",
+      "examples": [
+        [
+          "112233",
+          1122867
+        ],
+        [
+          "ff0000",
+          16711680
+        ],
+        [
+          "zz",
+          0
+        ]
+      ]
+    },
+    {
+      "name": "presence",
+      "effect": "True when the attribute is written at all, even empty (`nosync=\"\"`); the value is not read.",
+      "examples": [
+        [
+          "",
+          true
+        ],
+        [
+          "0",
+          true
+        ],
+        [
+          null,
+          false
+        ]
+      ]
+    },
+    {
+      "name": "truthy",
+      "effect": "The attribute is used only when its value is not empty. `\"0\"` counts as a value.",
+      "examples": [
+        [
+          "0",
+          true
+        ],
+        [
+          "",
+          false
+        ],
+        [
+          null,
+          false
+        ]
+      ]
+    },
+    {
+      "name": "one",
+      "effect": "True only when the value is exactly `1`.",
+      "examples": [
+        [
+          "1",
+          true
+        ],
+        [
+          "true",
+          false
+        ],
+        [
+          null,
+          false
+        ]
+      ]
+    }
+  ],
+  "groundTypes": [
+    {
+      "type": 0,
+      "name": "wood",
+      "friction": 0.05,
+      "restitution": 0.1,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 1,
+      "name": "ice",
+      "friction": 0,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 2,
+      "name": "trampoline",
+      "friction": 0,
+      "restitution": 1.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 3,
+      "name": "lava",
+      "friction": 0.3,
+      "restitution": 20,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 4,
+      "name": "chocolate",
+      "friction": 20,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 5,
+      "name": "earth",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 6,
+      "name": "grass",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 7,
+      "name": "sand",
+      "friction": 0.1,
+      "restitution": 0.2,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 8,
+      "name": "cloud",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Collision group 0 collides with shaman objects only."
+    },
+    {
+      "type": 9,
+      "name": "water",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": true,
+      "note": "An area: collision group always 5, `P` is ignored, area physics attributes apply."
+    },
+    {
+      "type": 10,
+      "name": "stone",
+      "friction": 0.3,
+      "restitution": 0,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 11,
+      "name": "snow",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": true,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 12,
+      "name": "rectangle",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Plain colour `o` (white without it)."
+    },
+    {
+      "type": 13,
+      "name": "circle",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Plain colour `o` (white without it); `L` is the radius, `H` is ignored."
+    },
+    {
+      "type": 14,
+      "name": "invisible",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Not drawn."
+    },
+    {
+      "type": 15,
+      "name": "cobweb",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": true,
+      "note": "An area: collision group always 5, area physics attributes apply."
+    },
+    {
+      "type": 16,
+      "name": "wood2",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Drawn with the plain plank picture."
+    },
+    {
+      "type": 17,
+      "name": "grass2",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 18,
+      "name": "grass3",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": ""
+    },
+    {
+      "type": 19,
+      "name": "acid",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "The body is marked as acid."
+    },
+    {
+      "type": 20,
+      "name": "honey",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": false,
+      "note": "Honey `20,4` unless `friction` says otherwise."
+    },
+    {
+      "type": 21,
+      "name": "galaxy",
+      "friction": 0.3,
+      "restitution": 0.2,
+      "bitmapCached": false,
+      "foreground": true,
+      "note": "A cup-shaped frame rather than a solid block; the top strip is drawn behind the mice."
+    }
+  ],
+  "groundSize": {
+    "min": 10,
+    "max": 4000
+  },
+  "areaDefaults": {
+    "9": {
+      "archAcc": 0.1,
+      "archMax": 0.5,
+      "archCheeseMax": 0.25,
+      "linDampAcc": 0,
+      "linDampMax": 0,
+      "angDampAcc": 0,
+      "angDampMax": 0
+    },
+    "15": {
+      "archAcc": 0.1,
+      "archMax": 0.3,
+      "archCheeseMax": 0.3,
+      "linDampAcc": 0.5,
+      "linDampMax": 28,
+      "angDampAcc": 0.2,
+      "angDampMax": 20
+    }
+  },
+  "collisionPresets": [
+    {
+      "preset": 0,
+      "category": 32,
+      "mask": 0,
+      "usedFor": "ground `c` 4 and above, water, cobweb"
+    },
+    {
+      "preset": 1,
+      "category": 1,
+      "mask": 22,
+      "usedFor": "not a ground (mice, inferred)"
+    },
+    {
+      "preset": 2,
+      "category": 2,
+      "mask": 23,
+      "usedFor": "not a ground (mice, inferred)"
+    },
+    {
+      "preset": 3,
+      "category": 4,
+      "mask": 15,
+      "usedFor": "ground `c` 0 or 1"
+    },
+    {
+      "preset": 4,
+      "category": 8,
+      "mask": 12,
+      "usedFor": "ground `c` 2; a cloud (8) with `c` 0"
+    },
+    {
+      "preset": 5,
+      "category": 16,
+      "mask": 3,
+      "usedFor": "ground `c` 3; the walls around the map"
+    }
+  ],
+  "objects": {
+    "created": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      6,
+      7,
+      10,
+      17,
+      23,
+      28,
+      32,
+      33,
+      34,
+      35,
+      39,
+      40,
+      45,
+      46,
+      54,
+      57,
+      59,
+      60,
+      61,
+      62,
+      63,
+      65,
+      67,
+      68,
+      69,
+      80,
+      89,
+      90,
+      95,
+      97
+    ],
+    "filtered": [
+      26,
+      27,
+      44,
+      79,
+      84,
+      85,
+      86,
+      94,
+      96
+    ],
+    "nails": [
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      22,
+      112,
+      113
+    ],
+    "worldNails": [
+      11,
+      12,
+      13,
+      112,
+      113
+    ],
+    "rotatingNails": [
+      12,
+      13,
+      15,
+      16,
+      112,
+      113
+    ],
+    "rotatingNailLimit": 11,
+    "noPicture": [
+      5,
+      8,
+      9,
+      21,
+      64
+    ],
+    "defilanteMarkers": {
+      "6": 0,
+      "15": 2,
+      "16": 3,
+      "32": 1
+    },
+    "ghostTransform": {
+      "multiply": [
+        1,
+        1,
+        1,
+        0.5
+      ],
+      "add": [
+        0,
+        40,
+        40,
+        0
+      ]
+    }
+  },
+  "decorations": {
+    "tags": [
+      {
+        "tag": "T",
+        "role": "hole",
+        "reads": [
+          "X",
+          "Y",
+          "D",
+          "CT"
+        ],
+        "picture": "`$Trou_Souris`"
+      },
+      {
+        "tag": "F",
+        "role": "cheese",
+        "reads": [
+          "X",
+          "Y",
+          "D"
+        ],
+        "picture": "`$Fromage` (see below)"
+      },
+      {
+        "tag": "DS",
+        "role": "mouse-spawn",
+        "reads": [
+          "X",
+          "Y"
+        ],
+        "picture": "none in the game"
+      },
+      {
+        "tag": "DC",
+        "role": "shaman-spawn",
+        "reads": [
+          "X",
+          "Y"
+        ],
+        "picture": "none in the game"
+      },
+      {
+        "tag": "DC2",
+        "role": "dual-shaman-spawn",
+        "reads": [
+          "X",
+          "Y"
+        ],
+        "picture": "none in the game"
+      },
+      {
+        "tag": "P",
+        "role": "decoration",
+        "reads": [
+          "X",
+          "Y",
+          "T",
+          "P",
+          "C"
+        ],
+        "picture": "`$P_<T>`"
+      }
+    ],
+    "holeGlows": {
+      "1": 10019563,
+      "2": 16691708
+    },
+    "minimalist": [
+      89,
+      90,
+      131
+    ],
+    "interactive": [
+      15,
+      16,
+      17,
+      19,
+      25,
+      67,
+      68,
+      89,
+      90,
+      104,
+      105,
+      131,
+      158,
+      166,
+      167
+    ],
+    "editorBackdrops": [
+      34,
+      117
+    ],
+    "eventCheeseSuffixes": [
+      "Cahier",
+      "Citrouille",
+      "Epice",
+      "Glace",
+      "Herbe",
+      "Nounours",
+      "Or",
+      "PasFrais",
+      "Saumon"
+    ]
+  },
+  "limits": {
+    "editorCharacters": "^[A-Za-z0-9 <>\"'\\-_.,:;=/#]*$",
+    "mapSize": {
+      "defaultWidth": 800,
+      "defaultHeight": 400,
+      "maxWidth": 1600,
+      "maxWidthDefilante": 4800,
+      "maxHeight": 800
+    },
+    "restricted": [
+      {
+        "what": "Map width `L`",
+        "restricted": "at most 1600 (4800 with `defilante`)",
+        "official": "no limit",
+        "module": "no limit"
+      },
+      {
+        "what": "Map height `H`",
+        "restricted": "at most 800",
+        "official": "no limit",
+        "module": "no limit"
+      },
+      {
+        "what": "Grounds",
+        "restricted": "the first 60",
+        "official": "all",
+        "module": "all"
+      },
+      {
+        "what": "Decoration-container children",
+        "restricted": "the first 50",
+        "official": "all",
+        "module": "all"
+      },
+      {
+        "what": "Shaman objects",
+        "restricted": "the first 40, and none after child index 200",
+        "official": "all",
+        "module": "all"
+      },
+      {
+        "what": "Tiled background `D=\"#url,w,h\"`",
+        "restricted": "ignored",
+        "official": "drawn",
+        "module": "drawn"
+      },
+      {
+        "what": "Repeated `D` and `d` images",
+        "restricted": "ignored",
+        "official": "drawn",
+        "module": "drawn"
+      },
+      {
+        "what": "Ground image `i`",
+        "restricted": "ignored",
+        "official": "drawn",
+        "module": "drawn"
+      },
+      {
+        "what": "`APS`, `IP`",
+        "restricted": "ignored",
+        "official": "used",
+        "module": "used"
+      },
+      {
+        "what": "`ARPS`",
+        "restricted": "ignored",
+        "official": "used",
+        "module": "ignored"
+      },
+      {
+        "what": "Particles",
+        "restricted": "at most 5",
+        "official": "no limit",
+        "module": "at most 5"
+      }
+    ],
+    "always": [
+      {
+        "what": "Repeats of a `D` image",
+        "limit": "at most 20"
+      },
+      {
+        "what": "Repeats of a `d` image",
+        "limit": "no limit"
+      },
+      {
+        "what": "Numbers in `DS=\"m;...\"`",
+        "limit": "the first 40 (20 points)"
+      },
+      {
+        "what": "Ground `L` and `H`",
+        "limit": "kept between 10 and 4000"
+      },
+      {
+        "what": "Particle `dur`",
+        "limit": "at most 10000 ms"
+      }
+    ],
+    "editorObjectDrawLimit": 40
+  },
+  "diagnostics": [
+    {
+      "code": "lenient-recovery",
+      "severity": "info",
+      "layer": "xml",
+      "meaning": "The parser (lenient by default; `lenient: false` is strict) recovered from markup a strict XML parser rejects, the way the game accepts it. `kind` is `stray-quotes` (`''` where an attribute name should start), `doubled-lt` (`<<`) or `garbled-tag-name` (a tag name containing `=`, quotes, `<` or `?`, read up to the next space, `/` or `>`).",
+      "game": "Real maps with these three faults run in the game; other malformed markup has not been tested."
+    },
+    {
+      "code": "duplicate-attribute",
+      "severity": "info",
+      "layer": "xml",
+      "meaning": "An element repeats an attribute name. The last value wins.",
+      "game": "Verified: the last value is used."
+    },
+    {
+      "code": "invalid-character-reference",
+      "severity": "info",
+      "layer": "xml",
+      "meaning": "`&#...;` with an out-of-range or malformed number; kept as text.",
+      "game": "Cannot occur in an editor-made map (`&` is not allowed)."
+    },
+    {
+      "code": "unknown-entity",
+      "severity": "info",
+      "layer": "xml",
+      "meaning": "`&name;` other than amp, lt, gt, quot, apos; kept as text.",
+      "game": "Cannot occur in an editor-made map (`&` is not allowed)."
+    },
+    {
+      "code": "multiple-root-elements",
+      "severity": "info",
+      "layer": "xml",
+      "meaning": "More than one top-level element; the first is the root.",
+      "game": "The first node is the map."
+    },
+    {
+      "code": "editor-disallowed-characters",
+      "severity": "editor-limit",
+      "layer": "text",
+      "meaning": "The text contains characters the editor does not allow; `characters` lists them. `$` only occurs in old maps and admin tools.",
+      "game": "None: the game reads any text; only the editor refuses to save it."
+    },
+    {
+      "code": "deprecated-attribute",
+      "severity": "info",
+      "layer": "semantic",
+      "meaning": "The settings carry `PNJ`, an attribute from 2012 that placed characters from the map. It no longer has an effect.",
+      "game": "Not read."
+    },
+    {
+      "code": "text-node-breaks-positional-slots",
+      "severity": "client-error",
+      "layer": "slots",
+      "meaning": "Text between tags (only a space is possible) takes a position, so the zone is not the second child of the root or has fewer than three children.",
+      "game": "The map fails to load. Spaces after the last container that matters are harmless."
+    },
+    {
+      "code": "legacy-text-node-shifts-root-slot",
+      "severity": "client-quirk",
+      "layer": "slots",
+      "meaning": "Text (usually formatting whitespace) sits among the first two children of the root.",
+      "game": "The game counts text as a child, so it would read the settings or the zone from the wrong element. `structureMode: \"client-raw\"` reproduces this."
+    },
+    {
+      "code": "legacy-text-node-shifts-zone-slot",
+      "severity": "client-quirk",
+      "layer": "slots",
+      "meaning": "Text sits among the first four children of the zone.",
+      "game": "The same shift for the ground, decoration, object and joint containers."
+    },
+    {
+      "code": "legacy-text-node-phantom-entries",
+      "severity": "client-quirk",
+      "layer": "slots",
+      "meaning": "A container (`S`, `D`, `O`, `L`) has text children.",
+      "game": "Each text node becomes an empty ground, decoration or object."
+    },
+    {
+      "code": "joint-unknown-tag-applies-to-previous",
+      "severity": "client-quirk",
+      "layer": "semantic",
+      "meaning": "A child of `L` is not `JD`, `JP`, `JPL` or `JR` but carries `c` and/or `lua`.",
+      "game": "The style or Lua id is applied to the previous joint; `joint.staleCarry.targetIndex` names it."
+    },
+    {
+      "code": "joint-lua-before-any-joint",
+      "severity": "client-error",
+      "layer": "semantic",
+      "meaning": "A child of `L` that is not a joint carries `lua` before any joint.",
+      "game": "The map fails to load."
+    },
+    {
+      "code": "zone-missing",
+      "severity": "client-error",
+      "layer": "structure",
+      "meaning": "The root has no second element.",
+      "game": "The map fails to load (it is not an empty map)."
+    },
+    {
+      "code": "zone-container-missing",
+      "severity": "client-error",
+      "layer": "structure",
+      "meaning": "The zone has fewer than three element children (the ground, decoration or object container is missing).",
+      "game": "The map fails to load."
+    },
+    {
+      "code": "decoration-p-attribute-missing",
+      "severity": "client-error",
+      "layer": "semantic",
+      "meaning": "A decoration `P` has no `P` attribute.",
+      "game": "The map fails to load."
+    },
+    {
+      "code": "particle-group-missing",
+      "severity": "client-error",
+      "layer": "semantic",
+      "meaning": "A particle `sp` or `acc` of two characters or more has no second `;` group.",
+      "game": "The map fails to load."
+    },
+    {
+      "code": "d-repeat-without-d-tuple",
+      "severity": "client-error",
+      "layer": "semantic",
+      "meaning": "`d` repeats an image but `D` has no `url,x,y,...` tuple (it is absent, `#...`, or a single URL).",
+      "game": "The map fails to load: the repeat offset comes from a `D` tuple that does not exist."
+    }
+  ],
+  "drawOrder": [
+    {
+      "layer": "background",
+      "contents": "the room colour, the map background `F`, the background images `D` (first), then in map order every decoration, hole and cheese that is not in the foreground; `ARPS` images when they appear",
+      "verified": true
+    },
+    {
+      "layer": "built-in objects",
+      "contents": "only used by the game's built-in maps; empty for XML maps",
+      "verified": true
+    },
+    {
+      "layer": "grounds",
+      "contents": "joint lines that are not in the foreground, every ground (with the galaxy strip behind its ground), then the foreground holes (`D` on `T`)",
+      "verified": true
+    },
+    {
+      "layer": "mice",
+      "contents": "the mice and the arrow (object 0); the renderer draws no mice",
+      "verified": true
+    },
+    {
+      "layer": "objects",
+      "contents": "shaman objects, the foreground cheese (`D` on `F`)",
+      "verified": true
+    },
+    {
+      "layer": "top",
+      "contents": "foreground joint lines, foreground `d` images (first), foreground grounds (`N`; types 9, 15, 21), foreground decorations, `APS` images, the soulmate heart",
+      "verified": true
+    },
+    {
+      "layer": "screen",
+      "contents": "the `Ca` frame, over everything and never mirrored",
+      "verified": false
+    }
+  ]
+}

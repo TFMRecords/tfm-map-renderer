@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Transformice map parser, asset tooling and renderers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tfmrecords/tfm-map-renderer.git"
+  },
   "exports": {
     ".": "./src/index.js",
     "./node": "./src/node.js",

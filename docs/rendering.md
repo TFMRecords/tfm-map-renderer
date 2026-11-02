@@ -49,7 +49,7 @@ static and dynamic, tinted and mirrored.
 ## Pictures from the game
 
 Holes, cheese, decorations, objects, backgrounds and ground tiles are pictures from the game's libraries. The asset tools
-(`tfm-assets build`) extract them with FFDec into bundles (format: `docs/asset-bundle-format.md`); the renderer
+(`tfm-assets build`) extract them with FFDec into bundles (format: [`asset-bundle-format.md`](asset-bundle-format.md)); the renderer
 draws them through a resolver. Without bundles it draws placeholders.
 
 FFDec's SVG export is not exactly what Flash draws. The renderer puts back what it loses:
@@ -106,6 +106,7 @@ the renderer's output, by eye and by measuring regions.
 | Flash blurs of even width use alternating centres | not compared with the game |
 | Thickness-0 joint lines are 1 unit wide, so they scale with the picture (Flash keeps a hairline at 1 px) | SVG |
 | Interactive decorations and animated pictures show their first frame | no playback |
+| Particles (`<particles>`) and mice are not drawn | not implemented; the parser reads particles |
 | Gradient highlights on some decorations show hairline seams at large zoom | anti-aliasing between a gradient and its base fill |
 | Objects 5, 8, 9, 21 and 64 have no picture: a dashed placeholder in the editor mode, nothing in the game mode | not in the game's libraries |
 | Placeholder ground colours (no bundles) are averages of a third-party editor's textures | not the game's art |

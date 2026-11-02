@@ -22,7 +22,8 @@ hand-written. [`spec.json`](spec.json) holds the same data for other tools.
 | [`images.md`](images.md) | `D`, `d`, `APS`, `ARPS`, `IP`, ground `i`: syntax and URL rules |
 | [`limits-and-modes.md`](limits-and-modes.md) | editor and game limits, restricted maps, mirroring, minimalist mode |
 
-How the renderer draws a map, and what has been compared with the game, is in [`../rendering.md`](../rendering.md).
+How the renderer draws a map, and what has been compared with the game, is in [`../rendering.md`](../rendering.md). The
+parser's functions, structure modes and derived values are in [`../api/parser.md`](../api/parser.md).
 
 ## The document
 

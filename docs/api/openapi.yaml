@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info:
+  title: tfm-map-renderer PNG render server
+  version: "0.1.0"
+  description: >
+    Renders Transformice map XML to PNG. Started with `npm run server`; see docs/api/http.md.
+    Renderer options are described in docs/api/renderer.md.
+  license:
+    name: MIT
+servers:
+  - url: http://127.0.0.1:3000
+paths:
+  /render:
+    post:
+      summary: Render a map to PNG
+      description: "`POST /` is the same endpoint."
+      operationId: render
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RenderRequest" }
+      responses:
+        "200":
+          description: The rendered map. JSON by default; the bare PNG when `raw` is true.
+          headers:
+            x-map-width: { description: "Map width (only with raw: true).", schema: { type: integer } }
+            x-map-height: { description: "Map height (only with raw: true).", schema: { type: integer } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RenderResponse" }
+            image/png:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/Error" }
+        "413": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+        "500": { $ref: "#/components/responses/Error" }
+  /health:
+    get:
+      summary: Server status
+      operationId: health
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  running: { type: integer, description: Renders in progress. }
+                  waiting: { type: integer, description: Requests in the queue. }
+                  backend: { type: string, example: resvg }
+                  release: { type: boolean, description: Whether an asset release is loaded. }
+components:
+  responses:
+    Error:
+      description: An error
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [error]
+            properties:
+              error: { type: string }
+  schemas:
+    RenderRequest:
+      type: object
+      required: [xml]
+      description: Renderer options may also be given at the top level; `mirror` is short for `mirrorX`. Unknown top-level fields are ignored.
+      properties:
+        xml: { type: string, description: Map XML, at most 2 MB. }
+        width: { type: integer, minimum: 1, maximum: 8192, description: Output width; alone it keeps the aspect ratio. }
+        height: { type: integer, minimum: 1, maximum: 8192, description: Output height; with width it stretches the map. }
+        raw: { type: boolean, default: false, description: Answer with the bare image/png. }
+        svg: { type: boolean, default: false, description: Also return the SVG. }
+        lenient: { type: boolean, default: true, description: false parses the XML strictly. }
+        mirror: { type: boolean, description: Same as options.mirrorX. }
+        options: { $ref: "#/components/schemas/RenderOptions" }
+    RenderOptions:
+      type: object
+      additionalProperties: false
+      description: See docs/api/renderer.md for each option.
+      properties:
+        mirrorX: { type: boolean }
+        minimalist: { type: boolean }
+        restricted: { type: boolean }
+        clientLimits:
+          oneOf:
+            - { type: string, enum: [unrestricted, restricted, module] }
+            - type: object
+              properties:
+                preset: { type: string, enum: [unrestricted, restricted, module] }
+                restricted: { type: boolean }
+                arps: { type: boolean }
+                maxWidth: { type: number, nullable: true }
+                maxWidthDefilante: { type: number, nullable: true }
+                maxHeight: { type: number, nullable: true }
+                maxGrounds: { type: number, nullable: true }
+                maxDecorations: { type: number, nullable: true }
+                maxObjects: { type: number, nullable: true }
+                maxObjectIndex: { type: number, nullable: true }
+        backgroundColor: { type: string, nullable: true, maxLength: 64 }
+        objectMode: { type: string, enum: [editor, game] }
+        nailVisibility: { type: string, enum: [all, client] }
+        objectPlaceholders: { type: boolean }
+        spawnMarkers: { type: string, enum: [circles, editor, none] }
+        renderJoints: { type: boolean }
+        renderAppearingImages: { type: boolean }
+        renderIpImages: { type: boolean }
+        renderSoulmateHeart: { type: boolean }
+        renderHideOffscreenFrame: { type: boolean }
+        renderTiledBackgrounds: { type: boolean }
+        compositeRandomBackground: { type: boolean }
+        randomBackgroundIndex: { type: number }
+        randomDecorationFlip: { type: boolean }
+        textures: { type: boolean }
+        textureSeed: { type: number }
+        pregeneratedBitmaps: { type: boolean }
+        cheeseSuffix: { type: string, maxLength: 64 }
+        defaultAssets: { type: boolean }
+        flashBlur: { type: boolean }
+        scale: { type: number }
+        rotation: { type: number }
+        borders: { type: string, enum: [none, map, all] }
+        debugMarkers: { type: boolean }
+        viewport:
+          type: object
+          properties:
+            x: { type: number }
+            y: { type: number }
+            width: { type: number }
+            height: { type: number }
+    RenderResponse:
+      type: object
+      properties:
+        image: { type: string, format: byte, description: Base64 PNG. }
+        mimeType: { type: string, example: image/png }
+        width: { type: integer }
+        height: { type: integer }
+        mapWidth: { type: integer }
+        mapHeight: { type: integer }
+        backend: { type: string, example: resvg }
+        clientLoads: { type: boolean, nullable: true, description: false when the game would fail to load the map. }
+        warnings: { type: array, description: The first 50 XML diagnostics., items: { type: object } }
+        svg: { type: string, description: Only with svg true. }
+        cached: { type: boolean, description: Present and true when answered from the result cache. }

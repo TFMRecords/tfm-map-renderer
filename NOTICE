@@ -1,0 +1,17 @@
+tfm-map-renderer
+
+The code in this repository is licensed under the MIT License (see LICENSE).
+
+Transformice is a game by Atelier 801. "Transformice" and "Atelier 801" are names of Atelier 801.
+This project is not affiliated with, endorsed by or sponsored by Atelier 801.
+
+This repository contains none of the game's code, SWF files or pictures. The asset tools download
+the game's public SWF files from www.transformice.com and extract pictures from them on the user's
+own machine; those pictures remain Atelier 801's property and are not covered by the MIT License.
+Published asset releases, if any, live in a separate repository with its own notice.
+
+The map files in test/maps/ and test/fixtures/ were written for this project.
+
+FFDec (JPEXS Free Flash Decompiler, https://github.com/jindrapetrik/jpexs-decompiler) is downloaded
+at run time by the asset tools and is licensed separately by its authors (GPL-3.0 for the
+application). resvg-js (@resvg/resvg-js, MPL-2.0) is an optional dependency used by the server.

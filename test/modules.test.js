@@ -100,3 +100,8 @@ test("the modules option rejects unknown modules and values", () => {
   assert.throws(() => renderTfmSvg(map, { modules: { nope: true } }), /unknown module "nope"/);
   assert.throws(() => renderTfmSvg(map, { modules: { parkour: "yes" } }), /"auto", true or false/);
 });
+
+test("parkour overlay: no size circle at the default size", () => {
+  const svg = renderTfmSvg(parseTfmMap(`<C><P/><Z><S/><D><DS X="50" Y="50"/>${CHAIR}</D><O><O C="22" X="100" Y="100"/><O C="22" X="200" Y="100" size="1.5"/></O></Z></C>`));
+  assert.equal((svg.match(/stroke-dasharray="3 3"/g) ?? []).length, 1, "only the checkpoint of size 1.5");
+});

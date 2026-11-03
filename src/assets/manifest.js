@@ -64,6 +64,17 @@ function readSvgDimensions(text) {
   return null;
 }
 
+/** The type and pixel size of PNG, GIF or JPEG bytes (by their signature), or `null`. */
+export function sniffImage(bytes) {
+  const png = readPngDimensions(bytes);
+  if (png) return { mime: "image/png", ...png };
+  const gif = readGifDimensions(bytes);
+  if (gif) return { mime: "image/gif", ...gif };
+  const jpeg = readJpegDimensions(bytes);
+  if (jpeg) return { mime: "image/jpeg", ...jpeg };
+  return null;
+}
+
 function dimensionsFor(extension, bytes, text) {
   if (extension === ".png") return readPngDimensions(bytes);
   if (extension === ".gif") return readGifDimensions(bytes);

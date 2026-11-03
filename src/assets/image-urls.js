@@ -34,7 +34,6 @@ function unsafePath(raw) {
   if (raw.length > MAX_URL_LENGTH) return "too-long";
   // eslint-disable-next-line no-control-regex
   if (/[\u0000-\u001f\u007f\\]/.test(raw)) return "invalid-character";
-  if (raw.split("/").some((part) => part === "..")) return "path-traversal";
   return null;
 }
 
@@ -105,7 +104,12 @@ export function resolveClientImageUrl(source, raw, options = {}) {
     default:
       return fail("unknown-source");
   }
-  const full = withScheme(base, scheme) + value;
+  // The game appends the value to the base as text; the request then resolves `.` and `..` segments, which can move up
+  // from /images/ but never off the base host (`../wp-content/x.gif` is www.transformice.com/wp-content/x.gif).
+  const prefix = withScheme(base, scheme);
+  let full;
+  try { full = new URL(prefix + value).href; } catch { return fail("invalid-url"); }
+  if (new URL(full).host !== new URL(prefix).host) return fail("invalid-url");
   return {
     ok: true, url: full, cacheKey: full, clientUrl: full + query,
     host: new URL(full).host, rule, provenance, source,

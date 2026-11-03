@@ -1,5 +1,5 @@
 // Parkour checkpoints (docs/xml/modules.md#parkour), drawn the way Miceditor shows them: a mouse at every checkpoint nail,
-// its number, a dotted circle of the checkpoint's size, plus what the module does there (size, cheese, stop).
+// its number, a dotted circle when its size is not 1, plus what the module does there (size, cheese, stop).
 import { DEFAULT_MARKER_STYLES } from "../default-assets.js";
 import { glyphLabel } from "../glyphs.js";
 import { attr, finiteOr, imageElement, resolveImage } from "../svg-util.js";
@@ -49,7 +49,8 @@ export function renderParkour(data, { resolver = null, mirrored = false } = {}) 
       if (c.stop) stops = true;
       parts.push(c.stop ? `<g${attr("filter", "url(#parkour-stop)")}${attr("data-parkour", "stop")}>${mouse(resolver)}</g>` : mouse(resolver));
     }
-    parts.push(`<circle${attr("r", format(radius))}${attr("fill", "none")}${attr("stroke", "#ffffff")}${attr("stroke-opacity", 0.85)}${attr("stroke-width", 1.5)}${attr("stroke-dasharray", "3 3")}/>`);
+    // The size circle only where the size differs from the default.
+    if (size !== 1) parts.push(`<circle${attr("r", format(radius))}${attr("fill", "none")}${attr("stroke", "#ffffff")}${attr("stroke-opacity", 0.85)}${attr("stroke-width", 1.5)}${attr("stroke-dasharray", "3 3")}/>`);
     if (c.cheese) parts.push(cheese(resolver, c.cheese));
     parts.push(glyphLabel(String(c.number), { y: -Math.max(30, radius + 8), anchor: "middle", height: 9 }));
     if (size !== 1) parts.push(glyphLabel(`×${format(size)}`, { x: 9, y: 14, height: 7 }));

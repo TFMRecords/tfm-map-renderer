@@ -52,6 +52,7 @@ paths:
                   waiting: { type: integer, description: Requests in the queue. }
                   backend: { type: string, example: resvg }
                   release: { type: boolean, description: Whether an asset release is loaded. }
+                  mapImages: { type: boolean, description: Whether the server fetches map images (off with --no-map-images). }
 components:
   responses:
     Error:
@@ -75,6 +76,7 @@ components:
         raw: { type: boolean, default: false, description: Answer with the bare image/png. }
         svg: { type: boolean, default: false, description: Also return the SVG. }
         lenient: { type: boolean, default: true, description: false parses the XML strictly. }
+        mapImages: { type: boolean, default: true, description: false skips the map's own images for this request. }
         mirror: { type: boolean, description: Same as options.mirrorX. }
         options: { $ref: "#/components/schemas/RenderOptions" }
     RenderOptions:
@@ -156,3 +158,10 @@ components:
         warnings: { type: array, description: The first 50 XML diagnostics., items: { type: object } }
         svg: { type: string, description: Only with svg true. }
         cached: { type: boolean, description: Present and true when answered from the result cache. }
+        mapImages:
+          type: object
+          description: Only when the server fetches map images.
+          properties:
+            requested: { type: integer, description: Map images the renderer draws. }
+            loaded: { type: integer }
+            missing: { type: integer, description: Images that could not be loaded (also a map-image-unavailable warning). }

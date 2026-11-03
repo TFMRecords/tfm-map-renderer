@@ -92,9 +92,15 @@ test("unofficial domains need the explicit flag even where the client allows the
   assert.equal(resolveClientImageUrl("D", "https://cdn.example/x.png", { unofficialDomains: true }).reason, "absolute-url-unsupported-by-client");
 });
 
-test("path traversal, control characters, empties and unknown sources are rejected", () => {
-  assert.equal(resolveClientImageUrl("D", "../secret.png").reason, "path-traversal");
-  assert.equal(resolveClientImageUrl("D", "a/../b.png").reason, "path-traversal");
+test("dot segments resolve on the base host, as the request does", () => {
+  assert.equal(resolveClientImageUrl("D", "../wp-content/a.gif").url, "http://www.transformice.com/wp-content/a.gif");
+  assert.equal(resolveClientImageUrl("D", "a/../b.png").url, "http://www.transformice.com/images/b.png");
+  assert.equal(resolveClientImageUrl("D", "../../../../x.png", { scheme: "https" }).url, "https://www.transformice.com/x.png");
+  assert.equal(resolveClientImageUrl("D", "//evil.example/x.png").host, "www.transformice.com", "text after the base never changes the host");
+  assert.equal(resolveClientImageUrl("APS", "../a.png").url, "http://www.transformice.com/a.png");
+});
+
+test("control characters, empties and unknown sources are rejected", () => {
   assert.equal(resolveClientImageUrl("D", "a\\b.png").reason, "invalid-character");
   assert.equal(resolveClientImageUrl("D", "a\u0000.png").reason, "invalid-character");
   assert.equal(resolveClientImageUrl("D", "").reason, "empty");

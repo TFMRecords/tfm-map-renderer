@@ -144,6 +144,10 @@ components:
                   oneOf:
                     - { type: string, enum: [auto] }
                     - { type: boolean }
+        parkourNails:
+          type: boolean
+          default: true
+          description: Draw each parkour checkpoint's nail again over its mouse, as Miceditor does.
     RenderResponse:
       type: object
       properties:

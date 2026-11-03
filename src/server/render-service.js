@@ -14,7 +14,7 @@ export const ALLOWED_OPTIONS = Object.freeze({
   renderTiledBackgrounds: "boolean", compositeRandomBackground: "boolean", randomBackgroundIndex: "number", randomDecorationFlip: "boolean",
   textures: "boolean", textureSeed: "number", pregeneratedBitmaps: "boolean", cheeseSuffix: "string", defaultAssets: "boolean", flashBlur: "boolean",
   scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport",
-  modules: "modules",
+  modules: "modules", parkourNails: "boolean",
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */
 const ALIASES = Object.freeze({ mirror: "mirrorX" });

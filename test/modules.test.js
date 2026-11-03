@@ -105,3 +105,13 @@ test("parkour overlay: no size circle at the default size", () => {
   const svg = renderTfmSvg(parseTfmMap(`<C><P/><Z><S/><D><DS X="50" Y="50"/>${CHAIR}</D><O><O C="22" X="100" Y="100"/><O C="22" X="200" Y="100" size="1.5"/></O></Z></C>`));
   assert.equal((svg.match(/stroke-dasharray="3 3"/g) ?? []).length, 1, "only the checkpoint of size 1.5");
 });
+
+test("parkour overlay: the nail is drawn again over each checkpoint mouse unless parkourNails is false", () => {
+  const map = parseTfmMap(`<C><P/><Z><S/><D><DS X="50" Y="50"/>${CHAIR}</D><O><O C="22" X="100" Y="100" P="30,0"/><O C="22" X="200" Y="100"/></O></Z></C>`);
+  const resolver = { resolve: ({ source }) => source === "$Objet_22" ? { href: "data:image/png;base64,AA==", width: 10, height: 10, origin: { x: 5, y: 5 } } : null };
+  const svg = renderTfmSvg(map, { assetResolver: resolver });
+  assert.equal((svg.match(/data-parkour="nail"/g) ?? []).length, 2);
+  assert.match(svg, /<g transform="rotate\(30\)" data-parkour="nail">/, "turned as in the map");
+  assert.match(renderTfmSvg(map, { assetResolver: resolver, mirrorX: true }), /<g transform="rotate\(-30\)" data-parkour="nail">/);
+  assert.doesNotMatch(renderTfmSvg(map, { assetResolver: resolver, parkourNails: false }), /data-parkour="nail"/);
+});

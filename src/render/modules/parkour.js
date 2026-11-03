@@ -1,5 +1,5 @@
-// Parkour checkpoints (docs/xml/modules.md#parkour), drawn the way Miceditor shows them: a mouse at every checkpoint nail,
-// its number, a dotted circle when its size is not 1, plus what the module does there (size, cheese, stop).
+// Parkour checkpoints (docs/xml/modules.md#parkour), drawn the way Miceditor shows them: a mouse at every checkpoint nail with
+// the nail drawn again over it, its number, a dotted circle when its size is not 1, plus what the module does there (size, cheese, stop).
 import { DEFAULT_MARKER_STYLES } from "../default-assets.js";
 import { glyphLabel } from "../glyphs.js";
 import { attr, finiteOr, imageElement, resolveImage } from "../svg-util.js";
@@ -20,6 +20,15 @@ function mouse(resolver) {
   return `<circle${attr("r", s.r)}${attr("fill", s.fill)}${attr("stroke", s.stroke)}/>`;
 }
 
+// The yellow nail itself, turned as in the map, so it stays visible over the mouse. In a mirrored room the checkpoint group is
+// already flipped back, so the rotation is negated the way the map's own objects are.
+function nail(resolver, rotation, mirrored) {
+  const picture = clip(resolver, "$Objet_22", 0, 0);
+  if (!picture) return "";
+  const angle = mirrored ? -rotation : rotation;
+  return `<g${angle ? attr("transform", `rotate(${angle})`) : ""}${attr("data-parkour", "nail")}>${picture}</g>`;
+}
+
 // A small cheese above the mouse's right ear; crossed out in red when the checkpoint takes the cheese away.
 function cheese(resolver, mode) {
   const picture = clip(resolver, "$Fromage", 0, 0);
@@ -34,10 +43,11 @@ function cheese(resolver, mode) {
 /**
  * The overlay of a map's parkour checkpoints (`map.modules.parkour`). The spawn (checkpoint 1) gets the annotations only, since
  * the spawn marker already draws a mouse there; the chair (the last checkpoint) is drawn by the map itself.
+ * With `nails` (the default) the nail of each checkpoint is drawn again over its mouse, as Miceditor does.
  * @param {object} data `map.modules.parkour`
- * @param {{resolver?: object, mirrored?: boolean}} context
+ * @param {{resolver?: object, mirrored?: boolean, map?: object, nails?: boolean}} context `map` gives the nails' rotation
  */
-export function renderParkour(data, { resolver = null, mirrored = false } = {}) {
+export function renderParkour(data, { resolver = null, mirrored = false, map = null, nails = true } = {}) {
   const out = [];
   let stops = false;
   for (const c of data?.checkpoints ?? []) {
@@ -48,6 +58,7 @@ export function renderParkour(data, { resolver = null, mirrored = false } = {}) 
     if (c.kind === "nail") {
       if (c.stop) stops = true;
       parts.push(c.stop ? `<g${attr("filter", "url(#parkour-stop)")}${attr("data-parkour", "stop")}>${mouse(resolver)}</g>` : mouse(resolver));
+      if (nails) parts.push(nail(resolver, finiteOr(map?.objects?.[c.objectIndex]?.rotation, 0), mirrored));
     }
     // The size circle only where the size differs from the default.
     if (size !== 1) parts.push(`<circle${attr("r", format(radius))}${attr("fill", "none")}${attr("stroke", "#ffffff")}${attr("stroke-opacity", 0.85)}${attr("stroke-width", 1.5)}${attr("stroke-dasharray", "3 3")}/>`);

@@ -610,6 +610,7 @@ function assertWithinLimits(width, height, limits) {
  * Joints with a style (`c`) are drawn as the client draws them (`renderJoints: false` leaves them out).
  * `modules` turns the overlays of Lua modules on or off: `{ parkour: "auto" }` (default; drawn when the parser detected a parkour
  * map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
+ * `parkourNails: false` leaves out the checkpoint nail the parkour overlay draws over each checkpoint mouse (on by default, as in Miceditor).
  * `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
  * type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
  * pictures are not drawn.  The client ignores the option for map mode 22 and for
@@ -667,7 +668,7 @@ export function renderTfmSvg(map, options = {}) {
     decorationParts(map, resolver, options.resolveDecorationAsset, { foreground: true, random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true }).join(""),
     restricted ? "" : renderApsImages(map.settings.images?.disappearing, resolver),
     // Lua module overlays (parkour checkpoints, ...): annotations over the map, not something the game draws.
-    renderModules(map, modules, { resolver, mirrored: options.mirrorX === true }),
+    renderModules(map, modules, { resolver, mirrored: options.mirrorX === true, map, nails: options.parkourNails !== false }),
     options.debugMarkers ? renderDebugMarkers(map) : "",
     options.renderSoulmateHeart === true && map.settings.soulmate && defaults ? renderSoulmateClip(resolver) : "",
     options.borders === "map" || options.borders === "all"

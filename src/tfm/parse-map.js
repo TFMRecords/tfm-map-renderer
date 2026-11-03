@@ -307,29 +307,26 @@ function parseForegroundImages(value, backgroundImages = []) {
   return result;
 }
 
-function parseParticlePairGroups(value) {
-  const raw = String(value).split(";");
-  const first = raw[0] == null ? null : String(raw[0]).split(",");
-  const second = raw[1] == null ? null : String(raw[1]).split(",");
-  const result = {
-    first: {
-      first: first && first.length > 0 ? as3Number(first[0]) : 0,
-      second: first && first.length > 1 ? as3Number(first[1]) : (first && first.length > 0 ? as3Number(first[0]) : 0),
-    },
-    second: {
-      first: 0,
-      second: 0,
-    },
-    raw,
+// `sp` / `acc`: "xFrom,xTo;yFrom,yTo". Each particle the game emits takes a random value between `from` and `to` on each axis;
+// a group with one number uses it for both (docs/xml/particles.md#how-the-game-emits-particles).
+const ZERO_RANGE = Object.freeze({ from: 0, to: 0 });
+function parseParticleRanges(value) {
+  const raw = String(value);
+  const groups = raw.split(";");
+  const range = (group) => {
+    const p = String(group).split(",");
+    const from = as3Number(p[0]);
+    return { from, to: p.length > 1 ? as3Number(p[1]) : from };
   };
-  // The second `;` group is read when the whole value is longer than one character, so a one-character value has
-  // no second group; a longer value without a second group makes the map fail to load (spec: particles/*.sp).
-  result.secondGroupMissing = String(value).length > 1 && !second;
-  if (String(value).length > 1 && second) {
-    result.second.first = second.length > 0 ? as3Number(second[0]) : 0;
-    result.second.second = second.length > 1 ? as3Number(second[1]) : (second.length > 0 ? as3Number(second[0]) : 0);
-  }
-  return result;
+  // The game decides whether the y group exists from the length of the whole value, not from the number of groups: a value
+  // longer than one character without `;` makes the map fail to load (spec: particles/*.sp).
+  const secondGroupMissing = raw.length > 1 && groups[1] == null;
+  return {
+    x: range(groups[0]),
+    y: raw.length > 1 && groups[1] != null ? range(groups[1]) : { ...ZERO_RANGE },
+    raw,
+    secondGroupMissing,
+  };
 }
 
 function parseParticle(node, options) {
@@ -342,7 +339,12 @@ function parseParticle(node, options) {
     : idIsHex
       ? as3ParseInt(rawId.slice(1), 16)
       : as3Int(rawId);
-  const orientation = a.ori == null ? null : String(a.ori).split(",");
+  // `ori` is where the particles start: two `int` fields (spec: particles/*.ori).
+  const ori = a.ori ? String(a.ori).split(",") : null;
+  const position = ori ? { x: as3Int(ori[0]), y: as3Int(ori[1]), raw: String(a.ori) } : null;
+  const speed = a.sp ? parseParticleRanges(a.sp) : null;
+  const acceleration = a.acc ? parseParticleRanges(a.acc) : null;
+  const ranges = (r) => ({ x: r ? { from: r.x.from, to: r.x.to } : { ...ZERO_RANGE }, y: r ? { from: r.y.from, to: r.y.to } : { ...ZERO_RANGE } });
 
   return {
     source: sourceRef(node),
@@ -356,16 +358,19 @@ function parseParticle(node, options) {
     duration: as3Int(a.dur),
     // The game creates no particle whose `id` is empty or absent (spec: particles/*.id).
     clientCreated: Boolean(rawId),
-    derived: { duration: Math.min(as3Int(a.dur), 10000) },
     interval: as3Int(a.int),
     loop: a.loop === "1",
-    orientation: orientation ? {
-      x: as3Int(orientation[0]),
-      y: as3Int(orientation[1]),
-      raw: orientation,
-    } : null,
-    speed: a.sp ? parseParticlePairGroups(a.sp) : null,
-    acceleration: a.acc ? parseParticlePairGroups(a.acc) : null,
+    position,
+    orientation: position, // the earlier name of `position`
+    speed,
+    acceleration,
+    // What the game emits with: absent values are 0 (docs/xml/particles.md#how-the-game-emits-particles).
+    derived: {
+      duration: Math.min(as3Int(a.dur), 10000),
+      position: { x: position?.x ?? 0, y: position?.y ?? 0 },
+      speed: ranges(speed),
+      acceleration: ranges(acceleration),
+    },
     attributes: keptAttributes(node, KNOWN_PARTICLE, options.preserveUnknown),
     unknownAttributes: unknownAttributes(node, KNOWN_PARTICLE, options.preserveUnknown),
   };

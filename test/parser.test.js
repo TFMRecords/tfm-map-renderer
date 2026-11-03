@@ -286,19 +286,24 @@ test("particle fields follow the documented conversions; the 10000 duration cap 
   assert.equal(particle.derived.duration, 10000);
   assert.equal(particle.interval, 17);
   assert.equal(particle.loop, true);
-  assert.deepEqual(particle.orientation, { x: 12, y: -3, raw: ["12.9", "-3.2"] });
-  assert.deepEqual(particle.speed, {
-    first: { first: 1.5, second: 2.5 },
-    second: { first: 4, second: 5 },
-    raw: ["1.5,2.5", "4,5"],
-    secondGroupMissing: false,
+  assert.deepEqual(particle.position, { x: 12, y: -3, raw: "12.9,-3.2" });
+  assert.equal(particle.orientation, particle.position, "orientation is the earlier name of position");
+  assert.deepEqual(particle.speed, { x: { from: 1.5, to: 2.5 }, y: { from: 4, to: 5 }, raw: "1.5,2.5;4,5", secondGroupMissing: false });
+  assert.deepEqual(particle.acceleration, { x: { from: 0.5, to: 0.5 }, y: { from: 1.25, to: 2.5 }, raw: "0.5;1.25,2.5", secondGroupMissing: false });
+  assert.deepEqual(particle.derived, {
+    duration: 10000,
+    position: { x: 12, y: -3 },
+    speed: { x: { from: 1.5, to: 2.5 }, y: { from: 4, to: 5 } },
+    acceleration: { x: { from: 0.5, to: 0.5 }, y: { from: 1.25, to: 2.5 } },
   });
-  assert.deepEqual(particle.acceleration, {
-    first: { first: 0.5, second: 0.5 },
-    second: { first: 1.25, second: 2.5 },
-    raw: ["0.5", "1.25,2.5"],
-    secondGroupMissing: false,
-  });
+});
+
+test("an emitter without ori, sp or acc starts at (0, 0) without speed", () => {
+  const particle = parseTfmMap(`<C><P/><Z><S/><D/><O/><particles><p id="1" ori=""/></particles></Z></C>`).particles[0];
+  assert.equal(particle.position, null);
+  assert.deepEqual(particle.derived.position, { x: 0, y: 0 });
+  assert.deepEqual(particle.derived.speed, { x: { from: 0, to: 0 }, y: { from: 0, to: 0 } });
+  assert.deepEqual(particle.derived.acceleration, particle.derived.speed);
 });
 
 test("client-style truthiness keeps empty dimensions absent but preserves empty G conversion", () => {

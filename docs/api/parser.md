@@ -69,7 +69,8 @@ Other fields that are not a single attribute:
 | `objects[]` | `clientFiltered` | the game does not create objects of this base type |
 | `objects[]` | `defilanteMarker` | 0 to 3 when the map has `defilante` and `C` is 6, 32, 15 or 16; such nodes are markers, not objects |
 | `joints[]` (unknown tag) | `staleCarry` | `{targetIndex, style, clientLuaId}`: the game applies `c` and `lua` to the previous joint |
-| `particles[]` | `clientCreated`, `derived.duration` | an empty `id` creates nothing; the duration is capped at 10000 |
+| `particles[]` | `clientCreated`, `derived.duration` | an empty `id` creates nothing; the lifetime of each particle is capped at 10000 |
+| `particles[]` | `derived.position`, `derived.speed`, `derived.acceleration` | what the emitter emits with, absent values as 0: position `{x, y}`, speed and acceleration `{x: {from, to}, y: {from, to}}` ([`particles.md`](../xml/particles.md#how-the-game-emits-particles)) |
 | `particles[].speed`, `.acceleration` | `secondGroupMissing` | the value would make the map fail to load |
 | `grounds[]` | `imageParts` | `{x, y, url, fields}` from `i="x,y,url"`, `null` with fewer than 3 fields |
 
@@ -95,6 +96,7 @@ Where the third-party editor Miceditor has a name for a field, the parser uses i
 | `decorations[].holeColor` | `holeType` | `CT` |
 | `joints[].damping` | `amplitude` | `AMP` |
 | `joints[].frequency` | `hz` | `HZ` |
+| `particles[].position` | `orientation` | `ori` (the emitter's position, not a direction) |
 
 The `friction="a,b"` attribute is honey, kept as the raw pair in `grounds[].friction` and decoded in `grounds[].honey`; the
 friction coefficient is `grounds[].physics.friction` (field 3 of `P`).

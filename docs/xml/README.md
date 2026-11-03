@@ -78,8 +78,8 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 <!-- BEGIN:status-summary -->
 | Status | Attributes |
 |---|---|
-| verified | 65 |
-| unverified | 29 |
+| verified | 64 |
+| unverified | 30 |
 | extension | 5 |
 | **total** | **99** |
 <!-- END:status-summary -->
@@ -114,8 +114,9 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 - [`L/JD.AMP`](joints.md#attr-L-JD-AMP): Sources disagree on the name: a third-party editor calls it damping, the community documentation elasticity.
 - [`L/*.c`](joints.md#style-c): That a child which is not a joint styles the previous joint follows the game's code; it has not been checked in the game.
 - [`L/*.lua`](joints.md#attr-L-any-lua): That a child which is not a joint changes the previous joint follows the game's code; it has not been checked in the game.
-- [`particles/*.sp`](particles.md): The load failure follows the game's code; no map with particles has been checked in the game.
-- [`particles/*.acc`](particles.md): The load failure follows the game's code; no map with particles has been checked in the game.
+- [`particles/*.loop`](particles.md#how-the-game-emits-particles): The code that uses the flag is not known; the emitter itself never stops either way.
+- [`particles/*.sp`](particles.md#how-the-game-emits-particles): The load failure follows the game's code; no map with particles has been checked in the game.
+- [`particles/*.acc`](particles.md#how-the-game-emits-particles): The load failure follows the game's code; no map with particles has been checked in the game.
 <!-- END:unverified -->
 
 ## Sources

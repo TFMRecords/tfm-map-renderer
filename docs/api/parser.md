@@ -75,6 +75,13 @@ Other fields that are not a single attribute:
 
 Absent attributes come back as `null` or `false`, not as the game's defaults; only `derived` fills defaults in.
 
+## Modules
+
+`map.modules` holds what Lua modules make of the map, one entry per supported module, for every map: for now
+`map.modules.parkour` (checkpoints with their size, cheese and stop, the end chair, and whether the map is a parkour map at all).
+The module attributes themselves (`stop`, `size`, `cheese`) stay in `attributes` like any other. See
+[`../xml/modules.md`](../xml/modules.md).
+
 ## Names and aliases
 
 Where the third-party editor Miceditor has a name for a field, the parser uses it and keeps the earlier name as an alias:
@@ -355,6 +362,8 @@ Blur: hole glows use Flash's exact box blurs (three passes of width 5); `flashBl
 stands in its rectangle and an `IP` image for 5 s after a server packet); `ARPS` needs `clientLimits.arps`, `IP` an unrestricted map.
 Nails: with `objectMode: "game"` every nail is drawn (when a nail is made is physics and run time, not the picture); `nailVisibility: "client"` applies the client's rules instead (joins at least one or two bodies, the limit of 11 rotating joints, `mc`, one world-nail picture per body: reference 19.5).
 Joints with a style (`c`) are drawn as the client draws them (`renderJoints: false` leaves them out).
+`modules` turns the overlays of Lua modules on or off: `{ parkour: "auto" }` (default; drawn when the parser detected a parkour
+map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
 `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
 type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
 pictures are not drawn.  The client ignores the option for map mode 22 and for

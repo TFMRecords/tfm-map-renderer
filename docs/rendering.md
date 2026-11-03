@@ -119,4 +119,5 @@ for objects (`objectMode: "editor"` draws every object that has a picture; `"gam
 markers (debug circles; `"none"` for the game, `"editor"` for the editor's pictures), nails (all drawn), and the pictures the
 game shows only later or on request (`renderAppearingImages`, `renderIpImages`, `renderTiledBackgrounds`, `renderSoulmateHeart`,
 `renderHideOffscreenFrame`, all off). `clientLimits` applies the limits of [`xml/limits-and-modes.md`](xml/limits-and-modes.md);
-`minimalist`, `mirrorX` and `cheeseSuffix` select the game modes.
+`minimalist`, `mirrorX` and `cheeseSuffix` select the game modes. Overlays of Lua modules, such as parkour checkpoints, are
+drawn above the map and are not part of the game's picture (`modules`, on for detected maps; [`api/renderer.md`](api/renderer.md#modules)).

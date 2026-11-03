@@ -131,6 +131,17 @@ components:
             y: { type: number }
             width: { type: number }
             height: { type: number }
+        modules:
+          description: Lua module overlays; false turns them all off.
+          oneOf:
+            - { type: boolean, enum: [false] }
+            - type: object
+              additionalProperties: false
+              properties:
+                parkour:
+                  oneOf:
+                    - { type: string, enum: [auto] }
+                    - { type: boolean }
     RenderResponse:
       type: object
       properties:

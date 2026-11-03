@@ -15,8 +15,9 @@ type. The index is [`README.md`](README.md); conversions are in [`values.md`](va
 | <a id="attr-O-Mv"></a>`Mv` | `truthy`, then `number`. Negated in a mirrored room. Absent: none. | Rotation speed of a nail (11 to 16; positive turns anticlockwise). | verified |
 | <a id="attr-O-Mp"></a>`Mp` | Read only when `Mv` is used: `number`. Absent: none. | Rotation power of a nail (11 to 16). | verified |
 | <a id="attr-O-P"></a>`P` | `truthy`. Split on `,`: field 1 `int` is the angle in degrees, clockwise (negated in a mirrored room); with a second field, `1` makes the object a ghost. Absent: 0,0. | Angle and ghost flag. A ghost does not collide with mice and is drawn translucent. | verified |
-| <a id="attr-O-stop"></a>`stop` | Not read by the game. Lua module convention: `presence`. Absent: false. | Used by the Lua module `parkour`. | extension |
-| <a id="attr-O-size"></a>`size` | Not read by the game. Lua module convention: `number`. Absent: none. | Used by the Lua module `parkour`. | extension |
+| <a id="attr-O-stop"></a>`stop` | Not read by the game. The module: written at all (`presence`, any value), on a yellow nail (`C="22"`). Absent: false. | parkour: reaching this checkpoint stops the mouse (it is respawned there, without speed). | extension |
+| <a id="attr-O-size"></a>`size` | Not read by the game. The module: Lua `tonumber` (decimal or `0x` hex); not a number or absent: the size of the previous checkpoint (the spawn's is 1). Absent: the previous checkpoint's size. | parkour: the mouse's size from this checkpoint on. | extension |
+| <a id="attr-O-cheese"></a>`cheese` | Not read by the game. The module: `0` (as a Lua number, so also `0.0`) removes the cheese, any other value, even an empty one, gives it. Absent: none. | parkour: the mouse gets (`give`) or loses (`remove`) the cheese at this checkpoint. | extension |
 <!-- END:attrs-object -->
 
 ## Parser fields
@@ -31,8 +32,9 @@ type. The index is [`README.md`](README.md); conversions are in [`values.md`](va
 | `O.Mv` | `number` | `objects[].speed` | `Mv="2.5"` -> `objects[0].speed = 2.5` |
 | `O.Mp` | `number` | `objects[].power` | `Mv="1" Mp="3.5"` -> `objects[0].power = 3.5` |
 | `O.P` | `list<int>` | `objects[].rotation`, `objects[].ghost` | `P="45,1"` -> `objects[0].ghost = true` |
-| `O.stop` | `bool` | `objects[].stop` | `stop=""` -> `objects[0].stop = true` |
-| `O.size` | `number` | `objects[].size` | `size="2.5"` -> `objects[0].size = 2.5` |
+| `O.stop` | `bool` | `modules.parkour.checkpoints[].stop` | `C="22" stop=""` -> `modules.parkour.checkpoints[0].stop = true`; `C="22"` -> `modules.parkour.checkpoints[0].stop = false`; `C="1" stop=""` -> `modules.parkour.checkpoints = []` |
+| `O.size` | `number` | `modules.parkour.checkpoints[].size`, `modules.parkour.checkpoints[].sizeAttribute` | `C="22" size="2.5"` -> `modules.parkour.checkpoints[0].size = 2.5`; `C="22" size="big"` -> `modules.parkour.checkpoints[0].size = 1`; `C="22" size="0x2"` -> `modules.parkour.checkpoints[0].sizeAttribute = 2` |
+| `O.cheese` | `enum` | `modules.parkour.checkpoints[].cheese` | `C="22" cheese=""` -> `modules.parkour.checkpoints[0].cheese = "give"`; `C="22" cheese="0"` -> `modules.parkour.checkpoints[0].cheese = "remove"`; `C="22"` -> `modules.parkour.checkpoints[0].cheese = null` |
 <!-- END:fields-object -->
 
 ## Type and skin `C`

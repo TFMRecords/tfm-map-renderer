@@ -339,10 +339,11 @@ test("ground type 9 preserves packed P but does not misdecode it as ordinary phy
   assert.equal(map.grounds[0].physics, null);
 });
 
-test("Parkour Lua object extensions preserve stop presence and numeric size", () => {
-  const map = parseTfmMap(`<C><P/><Z><S/><D/><O><O C="1" X="0" Y="0" stop="" size="24.5"/></O></Z></C>`);
-  assert.equal(map.objects[0].stop, true);
-  assert.equal(map.objects[0].size, 24.5);
+test("parkour attributes on a yellow nail are decoded under map.modules.parkour", () => {
+  const map = parseTfmMap(`<C><P/><Z><S/><D/><O><O C="22" X="0" Y="0" stop="" size="24.5"/></O></Z></C>`);
+  assert.equal(map.modules.parkour.checkpoints[0].stop, true);
+  assert.equal(map.modules.parkour.checkpoints[0].size, 24.5);
+  assert.equal("stop" in map.objects[0], false, "module data stays out of the core fields");
 });
 
 test("object movement fields are activated by non-empty Mv, matching source truthiness", () => {

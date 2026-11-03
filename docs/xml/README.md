@@ -21,6 +21,7 @@ hand-written. [`spec.json`](spec.json) holds the same data for other tools.
 | [`particles.md`](particles.md) | particles |
 | [`images.md`](images.md) | `D`, `d`, `APS`, `ARPS`, `IP`, ground `i`: syntax and URL rules |
 | [`limits-and-modes.md`](limits-and-modes.md) | editor and game limits, restricted maps, mirroring, minimalist mode |
+| [`modules.md`](modules.md) | attributes of Lua modules (parkour checkpoints), which the game itself ignores |
 
 How the renderer draws a map, and what has been compared with the game, is in [`../rendering.md`](../rendering.md). The
 parser's functions, structure modes and derived values are in [`../api/parser.md`](../api/parser.md).
@@ -79,8 +80,8 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 |---|---|
 | verified | 65 |
 | unverified | 29 |
-| extension | 2 |
-| **total** | **96** |
+| extension | 5 |
+| **total** | **99** |
 <!-- END:status-summary -->
 
 ### Unverified attributes

@@ -62,9 +62,23 @@ and the server's list in step.
 | `renderTiledBackgrounds` [false] | tiled `D="#url,w,h"` backgrounds (external images) |
 | `renderSoulmateHeart` [false] | the heart of `A` maps |
 | `renderHideOffscreenFrame` [false] | the frame of `Ca` maps around the 800 x 600 play area |
+| `modules` [{ parkour: "auto" }] | overlays of Lua modules (below); `false` hides them all |
 | `resolveDecorationAsset`, `resolveObjectAsset` | callbacks that supply decoration or object pictures directly |
 
 Server-only request fields are in [`http.md`](http.md).
+
+## Modules
+
+Maps made for a Lua module carry attributes the game ignores ([`../xml/modules.md`](../xml/modules.md)). The renderer draws what
+they mean as an overlay above the map. `modules` sets each module to `"auto"` (the default: drawn when the parser detected one of
+the module's maps), `true` (always) or `false` (never); `modules: false` turns them all off.
+
+| Module | Detected by | Overlay |
+|---|---|---|
+| `parkour` | the end chair (decoration 19 coloured `329cd2`) | at every checkpoint: its number above it and a dotted circle of radius 16 x `size`; a mouse at every nail (the editor's spawn picture); `x2`-style label at the corner when the size is not 1; a small cheese above the mouse for `cheese`, crossed out in red when the checkpoint takes it away; a blue tint on the mouse for `stop`. The spawn gets the annotations only (the spawn marker is the mouse); the chair is drawn by the map |
+
+Numbers and labels are drawn as paths, not text, so they look the same in every rasteriser. In a mirrored room the checkpoints
+move with the map but their labels stay readable.
 
 ## Client limits
 

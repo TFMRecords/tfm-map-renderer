@@ -10,6 +10,7 @@ import {
   OBJECT_FILTER, AREA_ATTRIBUTES, AREA_DEFAULTS, COLLISION_PRESETS, DYNAMIC_GROUND_DENSITY, DEFAULT_GRAVITY, bitsOf, clampGroundSize,
   decodeObjectType, groundConstructorPhysics, normalizeGroundPhysics, decodeCollisionGroup,
 } from "./client-constants.js";
+import { decodeModules, moduleAttributes } from "./modules/index.js";
 
 const KNOWN_SETTINGS = new Set([
   "nosync", "theme", "mc", "dodue", "aie", "bh", "mgoc", "Ca", "G", "N", "C", "A", "F", "P",
@@ -24,8 +25,9 @@ const KNOWN_GROUND = new Set([
   "archAcc", "archMax", "archCheeseMax", "linDampAcc", "linDampMax", "angDampAcc", "angDampMax",
 ]);
 
-const KNOWN_OBJECT = new Set(["C", "X", "Y", "nosync", "Mv", "Mp", "P", "stop", "size"]);
-const KNOWN_DECORATION = new Set(["X", "Y", "T", "C", "P", "D", "CT"]);
+// Attributes of Lua modules (src/tfm/modules/) are known too: they are decoded into `map.modules`.
+const KNOWN_OBJECT = new Set(["C", "X", "Y", "nosync", "Mv", "Mp", "P", ...moduleAttributes("object")]);
+const KNOWN_DECORATION = new Set(["X", "Y", "T", "C", "P", "D", "CT", ...moduleAttributes("decoration")]);
 const KNOWN_JOINT = new Set(["M1", "M2", "P1", "P2", "P3", "P4", "HZ", "AMP", "AXIS", "A", "LIM1", "LIM2", "MV", "R", "c", "lua"]);
 const KNOWN_PARTICLE = new Set(["id", "img", "dur", "int", "loop", "ori", "sp", "acc"]);
 
@@ -622,9 +624,6 @@ function parseObject(node, options, defilanteMode = false) {
     clientFiltered: OBJECT_FILTER.has(decodeObjectType(as3Int(a.C)).baseType),
     // Non-null only when settings.defilante is present; such nodes are not shaman objects in the game.
     defilanteMarker: defilanteMode ? (DEFILANTE_MARKER_KIND.get(as3Int(a.C)) ?? null) : null,
-    // Extensions used by the Lua module `parkour`; the game itself does not read them (spec: O.stop, spec: O.size).
-    stop: hasAttribute(node, "stop"),
-    size: hasAttribute(node, "size") ? as3Number(a.size) : null,
     attributes: keptAttributes(node, KNOWN_OBJECT, options.preserveUnknown),
     unknownAttributes: unknownAttributes(node, KNOWN_OBJECT, options.preserveUnknown),
   };
@@ -908,6 +907,11 @@ export function parseTfmDocument(source, userOptions = {}) {
     objects,
     joints,
     particles,
+    // What Lua modules make of the map (docs/xml/modules.md), one entry per module.
+    modules: decodeModules({
+      decorations: elementChildren(decorationsContainer).map((node, index) => ({ node, index })),
+      objects: elementChildren(objectsContainer).map((node, index) => ({ node, index })),
+    }),
     extensions: {
       unknown: options.preserveUnknown ? {
         rootChildren: preserveUnknownChildren(root, consumedRoot, true),

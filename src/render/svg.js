@@ -5,28 +5,13 @@ import { createTextureContext, renderTexturedGround, seededRandom, textureDefs }
 import { applyClientLimits, resolveClientLimits } from "./client-limits.js";
 import { GHOST_COLOR_TRANSFORM, NAIL_TYPES, WORLD_NAIL_TYPES, gameCreatesObject, isDrawnGhost } from "./client-objects.js";
 import { flashBlurPrimitives } from "../util/flash-blur.js";
+import { attr, finiteOr, imageElement, resolveImage } from "./svg-util.js";
+import { renderModules, resolveModuleOptions } from "./modules/index.js";
 
 /** The colour the game paints behind everything, the default room colour (docs/rendering.md#draw-order). */
 export const DEFAULT_ROOM_COLOR = "#6a7495";
 const DEFAULT_WIDTH = 800;
 const DEFAULT_HEIGHT = 400;
-
-function finiteOr(value, fallback) {
-  return Number.isFinite(value) ? value : fallback;
-}
-
-function escapeXml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function attr(name, value) {
-  return ` ${name}="${escapeXml(value)}"`;
-}
 
 function normalizeViewport(map, options) {
   const mapWidth = finiteOr(map.settings.width, DEFAULT_WIDTH);
@@ -43,23 +28,6 @@ function normalizeViewport(map, options) {
     width,
     height,
   };
-}
-
-function imageElement(asset, x, y, options = {}) {
-  if (!asset?.href) return "";
-  const width = asset.width ?? options.width;
-  const height = asset.height ?? options.height;
-  let out = `<image${attr("href", asset.href)}${attr("x", x)}${attr("y", y)}`;
-  if (width != null) out += attr("width", width);
-  if (height != null) out += attr("height", height);
-  if (options.preserveAspectRatio) out += attr("preserveAspectRatio", options.preserveAspectRatio);
-  out += "/>";
-  return out;
-}
-
-function resolveImage(resolver, source, kind, extra = {}) {
-  if (!resolver?.resolve || source == null || source === "") return null;
-  return resolver.resolve({ source, kind, ...extra });
 }
 
 function renderMapImage(record, resolver, kind) {
@@ -640,6 +608,8 @@ function assertWithinLimits(width, height, limits) {
  * stands in its rectangle and an `IP` image for 5 s after a server packet); `ARPS` needs `clientLimits.arps`, `IP` an unrestricted map.
  * Nails: with `objectMode: "game"` every nail is drawn (when a nail is made is physics and run time, not the picture); `nailVisibility: "client"` applies the client's rules instead (joins at least one or two bodies, the limit of 11 rotating joints, `mc`, one world-nail picture per body: reference 19.5).
  * Joints with a style (`c`) are drawn as the client draws them (`renderJoints: false` leaves them out).
+ * `modules` turns the overlays of Lua modules on or off: `{ parkour: "auto" }` (default; drawn when the parser detected a parkour
+ * map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
  * `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
  * type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
  * pictures are not drawn.  The client ignores the option for map mode 22 and for
@@ -648,6 +618,7 @@ function assertWithinLimits(width, height, limits) {
 export function renderTfmSvg(map, options = {}) {
   if (!map?.settings) throw new TypeError("renderTfmSvg expects a parsed TfmMap");
   const clientLimits = resolveClientLimits(options.clientLimits ?? (options.restricted === true ? "restricted" : "unrestricted"));
+  const modules = resolveModuleOptions(options.modules);
   map = applyClientLimits(map, clientLimits);
   const viewport = normalizeViewport(map, options);
   const scale = finiteOr(options.scale, 1);
@@ -695,6 +666,8 @@ export function renderTfmSvg(map, options = {}) {
     grounds.foreground,
     decorationParts(map, resolver, options.resolveDecorationAsset, { foreground: true, random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true }).join(""),
     restricted ? "" : renderApsImages(map.settings.images?.disappearing, resolver),
+    // Lua module overlays (parkour checkpoints, ...): annotations over the map, not something the game draws.
+    renderModules(map, modules, { resolver, mirrored: options.mirrorX === true }),
     options.debugMarkers ? renderDebugMarkers(map) : "",
     options.renderSoulmateHeart === true && map.settings.soulmate && defaults ? renderSoulmateClip(resolver) : "",
     options.borders === "map" || options.borders === "all"

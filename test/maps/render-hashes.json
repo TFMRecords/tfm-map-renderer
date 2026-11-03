@@ -398,6 +398,13 @@
     "minimalist": "071217cf1e8f16ce",
     "restricted": "071217cf1e8f16ce"
   },
+  "parkour-1.xml": {
+    "default": "1762b6f930e999c6",
+    "game": "e86bb9b86175216e",
+    "mirrored": "17b8e45a5a9bb3a0",
+    "minimalist": "cbccf0d1d95ec7e0",
+    "restricted": "1762b6f930e999c6"
+  },
   "repeated-attribute.xml": {
     "default": "2953f76fe66f15c7",
     "game": "230237d29a1228a3",

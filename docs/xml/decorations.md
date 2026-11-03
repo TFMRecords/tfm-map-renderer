@@ -30,6 +30,8 @@ them (the in-game editor draws a mouse and a shaman). Tags are case-sensitive: `
 | <a id="attr-D-P-T"></a>`T` | `P` | `int`. Absent: 0. | Decoration id: the picture `$P_<T>`. | verified |
 | <a id="attr-D-P-P"></a>`P` | `P` | Required: a `P` decoration without it makes the map fail to load. Split on `,`: field 1 is `one` (foreground); field 2 `int`: 1 always flipped, 2 flipped at random (one time in two), anything else not flipped. In a mirrored room the code becomes 0 when it is above 0, otherwise 1. Absent: required. | Foreground flag and horizontal flip. | **unverified**: The random flip follows the game's code; being random, it cannot be compared with the game. |
 | <a id="attr-D-P-C"></a>`C` | `P` | `truthy`, split on `,`. Absent: none. | Hex colours of the decoration's colourable parts, in order. A part with no colour in the list is black; without the attribute the parts keep their library colour. | verified |
+| <a id="attr-D-DS-size"></a>`size` | `DS` | Not read by the game. The module, on the first `DS`: Lua `tonumber`; otherwise 1. Absent: 1. | parkour: the mouse's size at the start. | extension |
+| <a id="attr-D-DS-cheese"></a>`cheese` | `DS` | Not read by the game. The module, on the first `DS`: `0` removes the cheese, any other value gives it. Absent: none. | parkour: the mouse starts with the cheese. | extension |
 <!-- END:attrs-decoration -->
 
 ## Parser fields
@@ -44,6 +46,8 @@ them (the in-game editor draws a mouse and a shaman). Tags are case-sensitive: `
 | `D/P.T` | `int` | `decorations[].type` | `T="42.5" P="0,0"` -> `decorations[0].type = 42` |
 | `D/P.P` | `list<int>` | `decorations[].foreground`, `decorations[].inversionCode`, `decorations[].reverse` | `T="1" P="1,2"` -> `decorations[0].reverse = "random"` |
 | `D/P.C` | `list<string>` | `decorations[].colors` | `T="1" P="0,0" C="ABCDEF,123456"` -> `decorations[0].colors = ["ABCDEF","123456"]` |
+| `D/DS.size` | `number` | `modules.parkour.checkpoints[0].size`, `modules.parkour.checkpoints[0].sizeAttribute` | `size="0.5"` -> `modules.parkour.checkpoints[0].size = 0.5`; `X="5"` -> `modules.parkour.checkpoints[0].size = 1` |
+| `D/DS.cheese` | `enum` | `modules.parkour.checkpoints[0].cheese` | `cheese="1"` -> `modules.parkour.checkpoints[0].cheese = "give"` |
 <!-- END:fields-decoration -->
 
 ## Holes and cheese

@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { parseTfmDocument } from "../tfm/parse-map.js";
 import { renderTfmSvg } from "../render/svg.js";
 import { shareSvgAssets } from "../render/share-assets.js";
+import { RENDER_MODULES } from "../render/modules/index.js";
 
 /** The renderer options a client may set (JSON values only: no resolvers or callbacks). Anything else in `options` is rejected. */
 export const ALLOWED_OPTIONS = Object.freeze({
@@ -13,6 +14,7 @@ export const ALLOWED_OPTIONS = Object.freeze({
   renderTiledBackgrounds: "boolean", compositeRandomBackground: "boolean", randomBackgroundIndex: "number", randomDecorationFlip: "boolean",
   textures: "boolean", textureSeed: "number", pregeneratedBitmaps: "boolean", cheeseSuffix: "string", defaultAssets: "boolean", flashBlur: "boolean",
   scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport",
+  modules: "modules",
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */
 const ALIASES = Object.freeze({ mirror: "mirrorX" });
@@ -30,6 +32,8 @@ function checkOption(name, value) {
     : rule === "string-or-null" ? value === null || (typeof value === "string" && value.length <= 64)
     : rule === "preset-or-object" ? typeof value === "string" || (value && typeof value === "object" && !Array.isArray(value))
     : rule === "viewport" ? value && typeof value === "object" && ["x", "y", "width", "height"].every((k) => value[k] === undefined || Number.isFinite(value[k]))
+    : rule === "modules" ? value === false || (value && typeof value === "object" && !Array.isArray(value)
+      && Object.entries(value).every(([k, v]) => k in RENDER_MODULES && (v === "auto" || v === true || v === false)))
     : false;
   if (!ok) throw new RequestError(`invalid value for option "${name}"`);
 }

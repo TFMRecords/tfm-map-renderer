@@ -1632,6 +1632,61 @@
       ]
     },
     {
+      "id": "D/DS.size",
+      "scope": "decoration",
+      "doc": "modules#parkour",
+      "node": "D/DS",
+      "name": "size",
+      "tags": [
+        "DS"
+      ],
+      "note": "",
+      "field": "modules.parkour.checkpoints[0].size, modules.parkour.checkpoints[0].sizeAttribute",
+      "type": "number",
+      "default": "1",
+      "rule": "Not read by the game. The module, on the first `DS`: Lua `tonumber`; otherwise 1.",
+      "meaning": "parkour: the mouse's size at the start.",
+      "status": "extension",
+      "module": "parkour",
+      "examples": [
+        [
+          "size=\"0.5\"",
+          "modules.parkour.checkpoints[0].size",
+          0.5
+        ],
+        [
+          "X=\"5\"",
+          "modules.parkour.checkpoints[0].size",
+          1
+        ]
+      ]
+    },
+    {
+      "id": "D/DS.cheese",
+      "scope": "decoration",
+      "doc": "modules#parkour",
+      "node": "D/DS",
+      "name": "cheese",
+      "tags": [
+        "DS"
+      ],
+      "note": "",
+      "field": "modules.parkour.checkpoints[0].cheese",
+      "type": "enum",
+      "default": "none",
+      "rule": "Not read by the game. The module, on the first `DS`: `0` removes the cheese, any other value gives it.",
+      "meaning": "parkour: the mouse starts with the cheese.",
+      "status": "extension",
+      "module": "parkour",
+      "examples": [
+        [
+          "cheese=\"1\"",
+          "modules.parkour.checkpoints[0].cheese",
+          "give"
+        ]
+      ]
+    },
+    {
       "id": "O.C",
       "scope": "object",
       "doc": "objects#type-and-skin-c",
@@ -1818,44 +1873,99 @@
     {
       "id": "O.stop",
       "scope": "object",
-      "doc": null,
+      "doc": "modules#parkour",
       "node": "O",
       "name": "stop",
       "tags": null,
       "note": "",
-      "field": "objects[].stop",
+      "field": "modules.parkour.checkpoints[].stop",
       "type": "bool",
       "default": "false",
-      "rule": "Not read by the game. Lua module convention: `presence`.",
-      "meaning": "Used by the Lua module `parkour`.",
+      "rule": "Not read by the game. The module: written at all (`presence`, any value), on a yellow nail (`C=\"22\"`).",
+      "meaning": "parkour: reaching this checkpoint stops the mouse (it is respawned there, without speed).",
       "status": "extension",
+      "module": "parkour",
       "examples": [
         [
-          "stop=\"\"",
-          "objects[0].stop",
+          "C=\"22\" stop=\"\"",
+          "modules.parkour.checkpoints[0].stop",
           true
+        ],
+        [
+          "C=\"22\"",
+          "modules.parkour.checkpoints[0].stop",
+          false
+        ],
+        [
+          "C=\"1\" stop=\"\"",
+          "modules.parkour.checkpoints",
+          []
         ]
       ]
     },
     {
       "id": "O.size",
       "scope": "object",
-      "doc": null,
+      "doc": "modules#parkour",
       "node": "O",
       "name": "size",
       "tags": null,
       "note": "",
-      "field": "objects[].size",
+      "field": "modules.parkour.checkpoints[].size, modules.parkour.checkpoints[].sizeAttribute",
       "type": "number",
-      "default": "none",
-      "rule": "Not read by the game. Lua module convention: `number`.",
-      "meaning": "Used by the Lua module `parkour`.",
+      "default": "the previous checkpoint's size",
+      "rule": "Not read by the game. The module: Lua `tonumber` (decimal or `0x` hex); not a number or absent: the size of the previous checkpoint (the spawn's is 1).",
+      "meaning": "parkour: the mouse's size from this checkpoint on.",
       "status": "extension",
+      "module": "parkour",
       "examples": [
         [
-          "size=\"2.5\"",
-          "objects[0].size",
+          "C=\"22\" size=\"2.5\"",
+          "modules.parkour.checkpoints[0].size",
           2.5
+        ],
+        [
+          "C=\"22\" size=\"big\"",
+          "modules.parkour.checkpoints[0].size",
+          1
+        ],
+        [
+          "C=\"22\" size=\"0x2\"",
+          "modules.parkour.checkpoints[0].sizeAttribute",
+          2
+        ]
+      ]
+    },
+    {
+      "id": "O.cheese",
+      "scope": "object",
+      "doc": "modules#parkour",
+      "node": "O",
+      "name": "cheese",
+      "tags": null,
+      "note": "",
+      "field": "modules.parkour.checkpoints[].cheese",
+      "type": "enum",
+      "default": "none",
+      "rule": "Not read by the game. The module: `0` (as a Lua number, so also `0.0`) removes the cheese, any other value, even an empty one, gives it.",
+      "meaning": "parkour: the mouse gets (`give`) or loses (`remove`) the cheese at this checkpoint.",
+      "status": "extension",
+      "module": "parkour",
+      "examples": [
+        [
+          "C=\"22\" cheese=\"\"",
+          "modules.parkour.checkpoints[0].cheese",
+          "give"
+        ],
+        [
+          "C=\"22\" cheese=\"0\"",
+          "modules.parkour.checkpoints[0].cheese",
+          "remove"
+        ],
+        [
+          "C=\"22\"",
+          "modules.parkour.checkpoints[0].cheese",
+          null
         ]
       ]
     },

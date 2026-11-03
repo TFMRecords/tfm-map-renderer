@@ -47,11 +47,9 @@ test("comments between slots do not shift client-raw slots", () => {
   assert.equal(map.settings.width, 700);
 });
 
-test("object stop/size are Lua-module (Parkour) attributes decoded as core optional fields, never client semantics", () => {
+test("object stop/size are Lua-module (parkour) attributes: known, kept, and not checkpoints on other objects", () => {
   const map = parseTfmMap(`<C><P/><Z><S/><D/><O><O C="1" X="1" Y="2" stop="1" size="2.5"/><O C="2" X="3" Y="4"/></O></Z></C>`);
-  assert.equal(map.objects[0].stop, true);
-  assert.equal(map.objects[0].size, 2.5);
-  assert.equal(map.objects[1].stop, false);
-  assert.equal(map.objects[1].size, null);
+  assert.deepEqual(map.modules.parkour.checkpoints, []);
+  assert.equal(map.objects[0].attributes.size, "2.5");
   assert.equal(map.objects[0].unknownAttributes, undefined, "known to the project, so not reported as unknown");
 });

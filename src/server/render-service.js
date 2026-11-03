@@ -74,8 +74,11 @@ export function sizeSvg(svg, width, height) {
  * @param {number} [config.concurrency] simultaneous renders, default 2; further requests wait (up to `maxQueue`, default 16, then 503)
  * @param {object} [config.mapImages] a `createMapImageFetcher()`: the map's own images (`D`, `d`, `i`, `APS`, ...) are fetched and
  *   drawn; a request turns it off with `"mapImages": false`. Without it they are not drawn (docs/api/http.md#map-images)
+ * @param {object} [config.defaultOptions] renderer options every request gets unless it sets them itself (same names and checks as a
+ *   request's `options`; a bad value throws here)
  */
-export function createRenderService({ rasterizer, assetResolver = null, mapImages = null, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64 }) {
+export function createRenderService({ rasterizer, assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64 }) {
+  const defaults = Object.freeze(parseOptions({ options: defaultOptions }));
   let running = 0;
   const waiting = [];
   const acquire = () => new Promise((resolve, reject) => {
@@ -93,7 +96,7 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     for (const key of ["width", "height"]) {
       if (body[key] != null && !(Number.isInteger(body[key]) && body[key] >= 1 && body[key] <= maxDimension)) throw new RequestError(`"${key}" must be an integer from 1 to ${maxDimension}`);
     }
-    const options = parseOptions(body);
+    const options = { ...defaults, ...parseOptions(body) };
     const withImages = Boolean(mapImages) && body.mapImages !== false;
     const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, withImages])).digest("hex") : null;
     if (cacheKey && cache.has(cacheKey)) { const hit = cache.get(cacheKey); cache.delete(cacheKey); cache.set(cacheKey, hit); return { ...hit, cached: true }; }

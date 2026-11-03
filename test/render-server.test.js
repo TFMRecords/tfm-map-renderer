@@ -22,6 +22,19 @@ test("service renders and validates", async () => {
   await assert.rejects(service.render({}), RequestError);
 });
 
+test("defaultOptions apply unless the request sets the option, and are checked", async () => {
+  const seen = [];
+  const rasterizer = { name: "fake", async rasterize(svg, { width, height }) { seen.push(svg); return { png: PNG, width, height }; } };
+  const xml = '<C><P/><Z><S/><D><DS X="100" Y="100"/></D><O/></Z></C>';
+  const circles = (await createRenderService({ rasterizer }).render({ xml, svg: true })).svg;
+  const none = createRenderService({ rasterizer, defaultOptions: { spawnMarkers: "none" } });
+  assert.notEqual((await none.render({ xml, svg: true })).svg, circles);
+  assert.equal((await none.render({ xml, svg: true, spawnMarkers: "circles" })).svg, circles);
+  assert.equal((await none.render({ xml, svg: true, options: { spawnMarkers: "circles" } })).svg, circles);
+  assert.throws(() => createRenderService({ rasterizer, defaultOptions: { spawnMarkers: "bogus" } }), RequestError);
+  assert.throws(() => createRenderService({ rasterizer, defaultOptions: { nope: 1 } }), RequestError);
+});
+
 test("http returns JSON base64 and raw png", async () => {
   const server = createRenderServer(createRenderService({ rasterizer: fakeRasterizer }));
   await new Promise((r) => server.listen(0, "127.0.0.1", r));

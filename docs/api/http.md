@@ -41,6 +41,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--max-map-images N` | 32 | most images fetched for one map |
 | `--max-image-bytes N` | 4000000 | largest image |
 | `--unofficial-images` | | also absolute URLs on other hosts, where the game can load them |
+| `--default-options JSON` | `$TFM_RENDER_DEFAULT_OPTIONS`, else none | renderer options every request gets unless it sets them itself (top level or in `options`), e.g. `'{"spawnMarkers":"editor"}'`; a bad value stops the start |
 
 ## Endpoints
 

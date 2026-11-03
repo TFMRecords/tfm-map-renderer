@@ -2424,7 +2424,7 @@
       "field": "particles[].image",
       "type": "string",
       "default": "none",
-      "rule": "Used only on maps without the limits of restricted maps (official and `#Module` maps), and only when `id` is not empty; there it replaces the picture of `id`. An image URL (see images), centred on the particle. The emitter waits until the image has loaded.",
+      "rule": "Used only on official maps (the flag that also enables `ARPS`; a `#Module` author is not enough), and only when `id` is not empty; there it replaces the picture of `id`. An image URL (see images), centred on the particle. The emitter waits until the image has loaded.",
       "meaning": "An image as the picture of the particles.",
       "status": "verified",
       "examples": [

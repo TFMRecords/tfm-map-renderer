@@ -13,7 +13,7 @@ The index is [`README.md`](README.md); conversions are in [`values.md`](values.m
 | Attribute | Read as | Meaning | Status |
 |---|---|---|---|
 | <a id="attr-particles-any-id"></a>`id` | Empty or absent: the particle is not created (`img` alone is not enough). `#rrggbb`: the colourable particle picture in that colour (`hex`); otherwise `int`, an index into the game's particle list. Absent: none (no particle). | The picture of the particles. | verified |
-| <a id="attr-particles-any-img"></a>`img` | Used only on maps without the limits of restricted maps (official and `#Module` maps), and only when `id` is not empty; there it replaces the picture of `id`. An image URL (see images), centred on the particle. The emitter waits until the image has loaded. Absent: none. | An image as the picture of the particles. | verified |
+| <a id="attr-particles-any-img"></a>`img` | Used only on official maps (the flag that also enables `ARPS`; a `#Module` author is not enough), and only when `id` is not empty; there it replaces the picture of `id`. An image URL (see images), centred on the particle. The emitter waits until the image has loaded. Absent: none. | An image as the picture of the particles. | verified |
 | <a id="attr-particles-any-dur"></a>`dur` | `int` (absent gives 0), then at most 10000. Absent: 0. | How long each particle lives, in milliseconds (not how long the emitter runs). | verified |
 | <a id="attr-particles-any-int"></a>`int` | `int` (absent gives 0). Absent: 0. | Time between two emissions, in milliseconds; one particle per emission. 0 emits every frame. | verified |
 | <a id="attr-particles-any-loop"></a>`loop` | `one`. Absent: false. | Passed to every particle the emitter creates; most likely the particle's picture repeats its animation. | **unverified**: The code that uses the flag is not known; the emitter itself never stops either way. |
@@ -50,7 +50,8 @@ Each element is an **emitter**. While the map runs, every frame, each emitter wh
    on the frame rate).
 5. It disappears `dur` milliseconds after it was emitted (at most 10000). With `dur` 0 it disappears at once.
 
-The picture is decided when the map is read: `img` (official and `#Module` maps only, and only when `id` is not empty), else
+The picture is decided when the map is read: `img` (official maps only, like `ARPS`: a `#Module` author is not enough; and only
+when `id` is not empty), else
 the colourable particle in the colour of `id="#rrggbb"`, else entry `id` of the game's particle list. An emitter whose picture
 is not available (an `img` still loading, an index outside the list) emits nothing. What `loop` changes is not known: it is
 handed to every particle, and most likely makes the particle's picture repeat its animation.
@@ -67,8 +68,8 @@ emits with in `derived` (absent values are 0).
 - **`sp` and `acc`.** The game decides whether the first and second groups exist from the length of the whole value: the
   first for any non-empty value, the second when the value is two characters or longer. A value such as `sp="1,2"` therefore
   makes the map fail to load (`particle-group-missing`), while `sp="5"` does not.
-- **Limit.** A restricted map gets at most 5 particles ([`limits-and-modes.md`](limits-and-modes.md)); emitters without a
-  picture do not count.
+- **Limit.** Every map except an official one gets at most 5 particles, `#Module` maps included
+  ([`limits-and-modes.md`](limits-and-modes.md#restricted-maps)); emitters without a picture do not count.
 
 How emitters behave is read from the game's code; no map with particles has been checked in the game. The renderer does not
 draw particles.

@@ -54,7 +54,7 @@ A value is a path below an image base; whether an absolute URL can load depends 
 | `APS`, `ARPS` | a bare `name.ext` (letters and digits, one dot): `http://images.atelier801.com/`; anything else: the transformice.com base | cannot load |
 | tiled `D="#url,w,h"` | the transformice.com base | loads as written |
 | ground `i` | a bare `name.ext`: images.atelier801.com; otherwise the transformice.com base | loads as written, except in `#Module` maps |
-| particle `img` | the transformice.com base | cannot load |
+| particle `img` (official maps only) | the transformice.com base | cannot load |
 
 A path with slashes stays below the base (`x_deadmeat/x_pictos/s_1205-fs8.png`); `..` moves up on the same host, since the
 value is appended to the base as text and the request resolves it (`../wp-content/a.gif` loads `www.transformice.com/wp-content/a.gif`). The editor's character set has no `?`, so an

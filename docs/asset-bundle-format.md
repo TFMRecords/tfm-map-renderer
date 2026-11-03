@@ -23,6 +23,10 @@ shaman-items.tar.gz
   "format": "tfm-assets-release",
   "version": 1,
   "ffdec": "26.3.0",
+  "code": { "ref": "v0.1.0" },
+  "swfs": [
+    { "name": "Transformice.swf", "sha256": "…", "bytes": 4218345 }
+  ],
   "bundles": [
     { "name": "game-resources", "file": "game-resources.tar.gz", "sha256": "…", "bytes": 1562278,
       "purpose": "grounds ($T_n tiles, $Sol_*), backgrounds ($F_n), cheese, holes, joints",
@@ -36,6 +40,8 @@ shaman-items.tar.gz
 | `format` | always `tfm-assets-release` |
 | `version` | the format version, see "Versions" |
 | `ffdec` | the FFDec version that extracted the pictures |
+| `code` | optional: `{ ref }`, the version of tfm-map-renderer that built the release (`build --code-ref`) |
+| `swfs[]` | the game files the release was built from: `name`, `sha256` and `bytes` as downloaded (before unwrapping). A new release is only worth building when one of these changes |
 | `bundles[]` | `name`, archive `file` (next to `release.json`), its `sha256` and size in `bytes` (checked when loading), a `purpose` text, and the number of `assets`, `symbols` and extractor `warnings` |
 
 Bundle names the renderer knows: `game-resources`, `game-fla`, `pictos`, `shaman-items`. Character ids repeat across SWFs, which
@@ -109,4 +115,7 @@ renderer matches rows to the placed elements in order and applies nothing when t
 
 `version` in `release.json` and in each `manifest.json` is 1. A change that an older reader would misread raises it, and
 `loadRelease` refuses a release whose version it does not know, with a message naming both versions. Adding optional fields
-does not raise it.
+does not raise it (`code` and `swfs` were added that way; releases without them still load).
+
+Published releases ([tfmrecords/tfm-map-assets](https://github.com/tfmrecords/tfm-map-assets)) are tagged
+`assets-YYYYMMDD-f<version>`, so the tag shows which readers can load it.

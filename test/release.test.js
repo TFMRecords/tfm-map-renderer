@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import * as b from "../test-support/swf-builder.js";
@@ -65,6 +66,28 @@ test("loadRelease refuses a release of another format version", async () => {
   try {
     await writeFile(path.join(dir, "release.json"), JSON.stringify({ format: "tfm-assets-release", version: 99, bundles: [] }));
     await assert.rejects(loadRelease(dir), /format version 99/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a release built from local SWF files records their hashes and the code version", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "tfm-release-swfdir-"));
+  try {
+    const swf = b.buildSwf([b.defineShapeRect(1, 0, 0, 100, 100), b.symbolClass([[1, "$F_3"]])], { compress: true });
+    const only = RELEASE_SOURCES.filter((s) => !s.embedded).map((s) => s.name);
+    const names = [...new Set(RELEASE_SOURCES.filter((s) => only.includes(s.name)).map((s) => s.swf))];
+    await mkdir(path.join(dir, "swfs"));
+    for (const name of names) await writeFile(path.join(dir, "swfs", name), swf);
+    const fetchImpl = async () => { throw new Error("must not download"); };
+    const index = await buildRelease({
+      outDir: path.join(dir, "out"), workDir: path.join(dir, "work"), only, fetchImpl, swfDir: path.join(dir, "swfs"),
+      code: { ref: "v9.9.9" }, extract: async () => fakeBundle(),
+    });
+    const sha256 = createHash("sha256").update(swf).digest("hex");
+    assert.deepEqual(index.swfs, names.map((name) => ({ name, sha256, bytes: swf.length })));
+    assert.deepEqual(index.code, { ref: "v9.9.9" });
+    assert.deepEqual(JSON.parse(await readFile(path.join(dir, "out", "release.json"), "utf8")).swfs, index.swfs);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

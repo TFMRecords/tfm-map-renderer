@@ -37,6 +37,17 @@ existing `ffdec-cli.jar` instead. The build then:
 
 Please keep downloads rare: a release only changes when the game's files do.
 
+## Using a published release
+
+Instead of building, download a release from
+[tfmrecords/tfm-map-assets](https://github.com/tfmrecords/tfm-map-assets/releases) into a directory and load it the same way:
+
+```sh
+gh release download --repo tfmrecords/tfm-map-assets --dir .assets/release    # the latest release
+```
+
+Releases are tagged `assets-YYYYMMDD-f<version>`; the `f` number is the format version `loadRelease` must support.
+
 ## Loading a release
 
 ```js
@@ -84,8 +95,8 @@ down (`refresh: true` downloads again). `loadAssetBundleOrNull` returns `null` i
 
 | Command | Does |
 |---|---|
-| `build [--out DIR] [--only a,b]` | fetch, unwrap, extract and write a release |
-| `fetch --out DIR` | only download (and unwrap) the SWFs |
+| `build [--out DIR] [--only a,b] [--swf-dir DIR] [--code-ref REF]` | fetch (or read from `--swf-dir`), unwrap, extract and write a release |
+| `fetch --out DIR [--raw]` | only download (and unwrap, unless `--raw`) the SWFs; prints their SHA-256 |
 | `unwrap <Transformice.swf> --out FILE` | rebuild the game SWF from the loader |
 | `embedded <game.swf> --out DIR` | write the SWFs embedded in the game SWF |
 | `inspect <file.swf>` | list the characters and symbol names of a SWF |

@@ -76,21 +76,26 @@ export function buildEffects(sources, files) {
 }
 
 /**
- * Build a release directory. `fetchImpl`/`extract` are injectable for tests.
+ * Build a release directory. The SWFs are downloaded, or read from `swfDir` (files named as in `MAP_SWFS`, as downloaded:
+ * `tfm-assets fetch --raw`). `release.json` records the SHA-256 of each SWF as read, so a new game version can be detected,
+ * and `code` (for example `{ ref: "v0.1.0" }`), the version of this code that built it (docs/asset-bundle-format.md).
+ * `fetchImpl`/`extract` are injectable for tests.
  * @returns {Promise<object>} the release index that was written to `release.json`
  */
 export async function buildRelease({
   outDir, workDir, jar, java = "java", ffdecVersion = "custom", only = null, log = () => {},
-  fetchImpl = fetch, extract = extractAssets,
+  fetchImpl = fetch, extract = extractAssets, swfDir = null, code = null,
 }) {
   const sources = RELEASE_SOURCES.filter((s) => !only || only.includes(s.name));
   const needed = new Set(sources.map((s) => s.swf));
   const files = new Map();
+  const swfs = [];
   for (const entry of MAP_SWFS.filter((e) => needed.has(e.name))) {
-    let data = await fetchSwf(entry, { fetchImpl });
+    let data = swfDir ? await readFile(path.join(swfDir, entry.name)) : await fetchSwf(entry, { fetchImpl });
+    swfs.push({ name: entry.name, sha256: createHash("sha256").update(data).digest("hex"), bytes: data.length });
     if (entry.loader && isLoaderSwf(data)) data = unwrapLoaderSwf(data).swf;
     files.set(entry.name, data);
-    log(`fetched ${entry.name} (${data.length} bytes)`);
+    log(`${swfDir ? "read" : "fetched"} ${entry.name} (${data.length} bytes)`);
   }
   await mkdir(outDir, { recursive: true });
   await mkdir(workDir, { recursive: true });
@@ -109,7 +114,7 @@ export async function buildRelease({
     });
   }
   await writeFile(path.join(outDir, "effects.json"), `${JSON.stringify(buildEffects(sources, files))}\n`);
-  const index = { format: RELEASE_FORMAT, version: RELEASE_VERSION, ffdec: ffdecVersion, bundles };
+  const index = { format: RELEASE_FORMAT, version: RELEASE_VERSION, ffdec: ffdecVersion, ...(code ? { code } : {}), swfs, bundles };
   await writeFile(path.join(outDir, "release.json"), `${JSON.stringify(index, null, 2)}\n`);
   return index;
 }

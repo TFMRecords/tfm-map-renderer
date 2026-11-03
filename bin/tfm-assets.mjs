@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // tfm-assets: inspect a SWF, extract static assets with a pinned FFDec, and pack release bundles.
 import { parseArgs } from "node:util";
+import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { readSwf } from "../src/swf/reader.js";
@@ -20,8 +21,12 @@ const USAGE = `Usage:
   tfm-assets unwrap <Transformice.swf> --out FILE      rebuild the real game SWF from the downloaded loader
   tfm-assets embedded <game.swf> --out DIR             write the SWFs embedded as binary data (the client's graphics libraries)
   tfm-assets effects [--out DIR]                       write effects.json (colour transforms, blend modes) into an existing release
-  tfm-assets build [--out DIR] [--only name,name]      fetch everything and write a release (one bundle per source + release.json)
-  tfm-assets fetch --out DIR [--only a.swf,b.swf]      download (and unwrap) the SWFs a map renderer needs
+  tfm-assets build [--out DIR] [--only name,name] [--swf-dir DIR] [--code-ref REF]
+                                                       fetch everything (or read the SWFs from --swf-dir) and write a release
+                                                       (one bundle per source + release.json; --code-ref is recorded in it)
+  tfm-assets fetch --out DIR [--only a.swf,b.swf] [--raw]
+                                                       download (and unwrap, unless --raw) the SWFs a map renderer needs;
+                                                       prints each file's SHA-256
 
 --out defaults to .assets/release for build and effects. Both "--out DIR" and "--out=DIR" work.
 Environment: TFM_FFDEC_JAR (use this jar), TFM_ASSETS_CACHE (FFDec cache directory).`;
@@ -32,6 +37,7 @@ const { values: opt, positionals } = parseArgs({
     out: { type: "string" }, bundle: { type: "string" }, match: { type: "string" }, kind: { type: "string" },
     ids: { type: "string" }, scope: { type: "string", default: "named" }, frames: { type: "string", default: "all" },
     "ffdec-jar": { type: "string" }, java: { type: "string", default: "java" }, "cache-dir": { type: "string" }, only: { type: "string" },
+    "swf-dir": { type: "string" }, "code-ref": { type: "string" }, raw: { type: "boolean", default: false },
     json: { type: "boolean", default: false }, help: { type: "boolean", default: false },
   },
 });
@@ -119,6 +125,7 @@ if (command === "ffdec" && rest[0] === "install") {
   const index = await buildRelease({
     outDir: resolve(opt.out), workDir: resolve(opt.out, ".work"), jar: found.jar, java: opt.java, ffdecVersion: found.version,
     only: opt.only ? opt.only.split(",") : null, log: (m) => console.error(m),
+    swfDir: opt["swf-dir"] ? resolve(opt["swf-dir"]) : null, code: opt["code-ref"] ? { ref: opt["code-ref"] } : null,
   });
   console.log(JSON.stringify(index, null, 2));
 } else if (command === "fetch") {
@@ -127,11 +134,11 @@ if (command === "ffdec" && rest[0] === "install") {
   const done = [];
   for (const entry of MAP_SWFS.filter((e) => !only || only.has(e.name))) {
     let data = await fetchSwf(entry);
-    if (entry.loader && isLoaderSwf(data)) data = unwrapLoaderSwf(data).swf;
+    if (entry.loader && !opt.raw && isLoaderSwf(data)) data = unwrapLoaderSwf(data).swf;
     const target = resolve(opt.out, entry.name);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, data);
-    done.push({ file: entry.name, bytes: data.length });
+    done.push({ file: entry.name, bytes: data.length, sha256: createHash("sha256").update(data).digest("hex") });
     console.error(`fetched ${entry.name} (${data.length} bytes)`);
   }
   console.log(JSON.stringify(done, null, 2));

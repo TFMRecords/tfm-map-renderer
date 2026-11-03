@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: tfm-map-renderer PNG render server
-  version: "0.1.0"
+  version: "0.2.0"
   description: >
     Renders Transformice map XML to PNG. Started with `npm run server`; see docs/api/http.md.
     Renderer options are described in docs/api/renderer.md.

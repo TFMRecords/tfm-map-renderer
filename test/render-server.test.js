@@ -113,3 +113,50 @@ test("every option the server accepts is documented in docs/api/renderer.md", { 
   const missing = Object.keys(ALLOWED_OPTIONS).filter((name) => !doc.includes(`\`${name}\``) && !doc.includes(`\`${name} `) && !new RegExp(`\`[^\`]*\\b${name}\\b[^\`]*\``).test(doc));
   assert.deepEqual(missing, [], "options missing from the Options table in docs/api/renderer.md");
 });
+
+test("rasterize: false answers the SVG only, and needs svg: true", async () => {
+  let calls = 0;
+  const rasterizer = { name: "fake", async rasterize(svg, { width, height }) { calls++; return { png: PNG, width, height }; } };
+  const service = createRenderService({ rasterizer });
+  const r = await service.render({ xml: XML, svg: true, rasterize: false });
+  assert.equal(calls, 0);
+  assert.equal(r.png, undefined);
+  assert.match(r.svg, /^<svg /);
+  assert.deepEqual([r.width, r.height, r.backend], [800, 400, "svg"]);
+  // No pixels, so no output size limit: a map far above 16384 still gives its SVG.
+  const huge = await service.render({ xml: '<C><P L="8000000" H="4000000"/><Z><S/><D/><O/></Z></C>', svg: true, rasterize: false });
+  assert.deepEqual([huge.width, huge.height], [8000000, 4000000]);
+  await assert.rejects(service.render({ xml: XML, rasterize: false }), /needs "svg": true/);
+  await assert.rejects(service.render({ xml: XML, svg: true, rasterize: "no" }), /true or false/);
+});
+
+test("http: a failed raster keeps its error status, with the SVG when svg: true", async () => {
+  const rasterizer = { name: "fake", async rasterize() { throw new RequestError("the rasterizer crashed on this picture", 422); } };
+  const server = createRenderServer(createRenderService({ rasterizer, cacheEntries: 0 }));
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const post = (body) => fetch(`http://127.0.0.1:${server.address().port}/render`, { method: "POST", body: JSON.stringify({ xml: XML, ...body }) });
+  try {
+    const plain = await post({});
+    assert.equal(plain.status, 422);
+    assert.deepEqual(Object.keys(await plain.json()), ["error"]);
+    const json = await post({ svg: true });
+    assert.equal(json.status, 422);
+    const body = await json.json();
+    assert.match(body.error, /crashed/);
+    assert.match(body.svg, /^<svg /);
+    assert.ok(Array.isArray(body.warnings));
+    const raw = await post({ svg: true, raw: true });
+    assert.equal(raw.status, 422);
+    assert.match(raw.headers.get("content-type"), /^image\/svg\+xml/);
+    assert.match(raw.headers.get("x-render-error"), /crashed/);
+    assert.match(await raw.text(), /^<svg /);
+    const svgOnly = await post({ svg: true, rasterize: false, raw: true });
+    assert.equal(svgOnly.status, 200);
+    assert.match(svgOnly.headers.get("content-type"), /^image\/svg\+xml/);
+    const svgJson = await (await post({ svg: true, rasterize: false })).json();
+    assert.equal(svgJson.image, undefined);
+    assert.match(svgJson.svg, /^<svg /);
+  } finally {
+    server.close();
+  }
+});

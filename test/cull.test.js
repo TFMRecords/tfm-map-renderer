@@ -56,5 +56,21 @@ test("server maxMapSize renders a huge map cropped, with a warning", async () =>
   assert.deepEqual(r.warnings.find((w) => w.code === "map-cropped"), { code: "map-cropped", severity: "info", x: 0, y: 0, width: 4800, height: 3200 });
   const small = await service.render({ xml: "<C><P/><Z><S/><D/><O/></Z></C>" });
   assert.equal(small.warnings.some((w) => w.code === "map-cropped"), false);
-  await assert.rejects(createRenderService({ rasterizer }).render({ xml: HUGE }), /limits/);
+});
+
+test("above the output limits the picture is truncated: the width up to 8192, then the rows that fit", async () => {
+  const seen = [];
+  const rasterizer = { name: "fake", async rasterize(svg, { width, height }) { seen.push(svg); return { png: Buffer.alloc(0), width, height }; } };
+  const service = createRenderService({ rasterizer });
+  // 8000000 x 4000000 at scale 1: 8192 wide, then 16777216 / 8192 = 2048 rows; only that part of the map is drawn.
+  const r = await service.render({ xml: HUGE });
+  assert.deepEqual([r.width, r.height], [8192, 2048]);
+  assert.deepEqual(r.warnings.find((w) => w.code === "image-truncated"), { code: "image-truncated", severity: "info", requestedWidth: 8000000, requestedHeight: 4000000, width: 8192, height: 2048 });
+  assert.match(seen.at(-1), /viewBox="0 0 8192 2048"/);
+  // An asked size keeps its scale: 8192 x 4096 for an 800 x 400 map stops after 2048 rows, which is the top half of the map.
+  const asked = await service.render({ xml: '<C><P/><Z><S/><D/><O/></Z></C>', width: 8192, height: 4096 });
+  assert.deepEqual([asked.width, asked.height], [8192, 2048]);
+  assert.match(seen.at(-1), /viewBox="0 0 800 200"/);
+  const small = await service.render({ xml: "<C><P/><Z><S/><D/><O/></Z></C>" });
+  assert.equal(small.warnings.some((w) => w.code === "image-truncated"), false);
 });

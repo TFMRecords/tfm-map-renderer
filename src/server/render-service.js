@@ -104,9 +104,13 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     for (const key of ["width", "height"]) {
       if (body[key] != null && !(Number.isInteger(body[key]) && body[key] >= 1 && body[key] <= maxDimension)) throw new RequestError(`"${key}" must be an integer from 1 to ${maxDimension}`);
     }
-    const options = { ...defaults, ...parseOptions(body), ...(maxMapSize ? { maxViewport: maxMapSize } : {}) };
+    if (body.rasterize !== undefined && typeof body.rasterize !== "boolean") throw new RequestError('"rasterize" must be true or false');
+    const rasterize = body.rasterize !== false;
+    if (!rasterize && body.svg !== true) throw new RequestError('"rasterize": false needs "svg": true');
+    // Nothing is rasterised for an SVG-only answer, so the renderer's output size check (`limits`) is off; `maxMapSize` still applies.
+    const options = { ...defaults, ...parseOptions(body), ...(maxMapSize ? { maxViewport: maxMapSize } : {}), ...(rasterize ? {} : { limits: false }) };
     const withImages = Boolean(mapImages) && body.mapImages !== false;
-    const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, withImages])).digest("hex") : null;
+    const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, rasterize, withImages])).digest("hex") : null;
     if (cacheKey && cache.has(cacheKey)) { const hit = cache.get(cacheKey); cache.delete(cacheKey); cache.set(cacheKey, hit); return { ...hit, cached: true }; }
     let parsed;
     try {
@@ -121,6 +125,25 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     } catch (error) {
       if (error instanceof RangeError) throw new RequestError(error.message);
       throw error;
+    }
+    // The output size, known before drawing: the drawn part of the map times `scale`, or the asked `width` / `height`.
+    const scale = options.scale ?? 1;
+    if (!(scale > 0)) throw new RequestError("SVG scale must be positive");
+    const naturalWidth = Math.round(drawn.width * scale), naturalHeight = Math.round(drawn.height * scale);
+    let width = body.width ?? naturalWidth;
+    let height = body.height ?? naturalHeight;
+    if (body.width != null && body.height == null) height = Math.max(1, Math.round(naturalHeight * width / naturalWidth));
+    if (body.height != null && body.width == null) width = Math.max(1, Math.round(naturalWidth * height / naturalHeight));
+    // Above the output limits the picture stops there: the width is kept up to `maxDimension` and the rows up to `maxPixels`, and
+    // only that top-left part of the map is drawn (a smaller viewport, so the cut-off part is culled and never reaches resvg).
+    let truncated = null;
+    if (rasterize && (width > maxDimension || height > maxDimension || width * height > maxPixels)) {
+      const keptWidth = Math.min(width, maxDimension);
+      const keptHeight = Math.max(1, Math.min(height, maxDimension, Math.floor(maxPixels / keptWidth)));
+      truncated = { code: "image-truncated", severity: "info", requestedWidth: width, requestedHeight: height, width: keptWidth, height: keptHeight };
+      options.viewport = { x: drawn.x, y: drawn.y, width: drawn.width * keptWidth / width, height: drawn.height * keptHeight / height };
+      width = keptWidth;
+      height = keptHeight;
     }
     const assets = assetResolver && options.defaultAssets !== false ? assetResolver : null;
     const draw = (resolver) => {
@@ -144,49 +167,53 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
       svg = draw(assets);
     }
     if (shareAssets) svg = shareSvgAssets(svg);
-    const natural = /^<svg[^>]* width="([\d.]+)" height="([\d.]+)"/.exec(svg);
-    const naturalWidth = Math.round(Number(natural?.[1] ?? 800)), naturalHeight = Math.round(Number(natural?.[2] ?? 400));
-    let width = body.width ?? naturalWidth;
-    let height = body.height ?? naturalHeight;
-    if (body.width != null && body.height == null) height = Math.max(1, Math.round(naturalHeight * width / naturalWidth));
-    if (body.height != null && body.width == null) width = Math.max(1, Math.round(naturalWidth * height / naturalHeight));
-    if (width > maxDimension || height > maxDimension || width * height > maxPixels) throw new RequestError(`the image would be ${width}x${height} pixels, above the limit (${maxDimension} per side, ${maxPixels} in all)`, 413);
-    await acquire();
-    let result;
-    try {
-      let timer;
-      // On timeout the rasterizer is told to stop (a pool kills that child), so the picture does not keep a process busy.
-      const controller = new AbortController();
-      const timeout = new Promise((_, reject) => {
-        timer = setTimeout(() => { const error = new RequestError("rendering took too long", 503); controller.abort(error); reject(error); }, timeoutMs);
-      });
-      try {
-        result = await Promise.race([rasterizer.rasterize(sizeSvg(svg, width, height), { width, height, signal: controller.signal }), timeout]);
-      } catch (error) {
-        if (error?.name === "RasterizerCrashError") throw new RequestError(error.message, error.status ?? 422);
-        throw error;
-      } finally {
-        clearTimeout(timer);
-      }
-    } finally {
-      release();
-    }
-    const response = {
-      png: result.png,
-      width: result.width,
-      height: result.height,
+    const info = {
       mapWidth: map.settings.width ?? 800,
       mapHeight: map.settings.height ?? 400,
-      backend: rasterizer.name,
+      backend: rasterize ? rasterizer.name : "svg",
       clientLoads: map.source?.clientLoads ?? null,
       warnings: [
         ...(document.diagnostics ?? []).slice(0, 50),
         ...(images?.missing ? [{ code: "map-image-unavailable", severity: "info", count: images.missing }] : []),
         ...(drawn.cropped ? [{ code: "map-cropped", severity: "info", x: drawn.x, y: drawn.y, width: drawn.width, height: drawn.height }] : []),
+        ...(truncated ? [truncated] : []),
       ],
       ...(images ? { mapImages: images } : {}),
       ...(body.svg === true ? { svg } : {}),
     };
+    let response;
+    if (!rasterize) {
+      // The SVG at its own size; `width` and `height` apply to the PNG only.
+      response = { width: naturalWidth, height: naturalHeight, ...info };
+    } else {
+      let result;
+      try {
+        await acquire();
+        try {
+          let timer;
+          // On timeout the rasterizer is told to stop (a pool kills that child), so the picture does not keep a process busy.
+          const controller = new AbortController();
+          const timeout = new Promise((_, reject) => {
+            timer = setTimeout(() => { const error = new RequestError("rendering took too long", 503); controller.abort(error); reject(error); }, timeoutMs);
+          });
+          try {
+            result = await Promise.race([rasterizer.rasterize(sizeSvg(svg, width, height), { width, height, signal: controller.signal }), timeout]);
+          } catch (error) {
+            if (error?.name === "RasterizerCrashError") throw new RequestError(error.message, error.status ?? 422);
+            throw error;
+          } finally {
+            clearTimeout(timer);
+          }
+        } finally {
+          release();
+        }
+      } catch (error) {
+        // With `svg: true` the answer keeps the SVG (and the rest) next to the error.
+        if (body.svg === true && error && typeof error === "object") error.partial = info;
+        throw error;
+      }
+      response = { png: result.png, width: result.width, height: result.height, ...info };
+    }
     // A render that misses map images is not kept: the next request tries them again.
     if (cacheKey && !images?.missing) { cache.set(cacheKey, response); if (cache.size > cacheEntries) cache.delete(cache.keys().next().value); }
     return response;

@@ -1,6 +1,8 @@
 // HTTP front end of the render service (node:http, no framework). POST `/` or `/render` with `{ xml, ... }`; GET `/` usage, GET `/health`.
 import http from "node:http";
 import { RequestError } from "./render-service.js";
+
+const SVG_TYPE = "image/svg+xml; charset=utf-8";
 import { TEST_PAGE } from "./test-page.js";
 
 const USAGE = `tfm-render-server
@@ -19,7 +21,7 @@ GET /test (or / in a browser) -> a page to paste XML + JSON config and see the r
  * @param {{maxBodyBytes?: number, cors?: boolean, info?: object}} [config]
  */
 export function createRenderServer(service, { maxBodyBytes = 3_000_000, cors = true, info = {} } = {}) {
-  const headers = (extra = {}) => ({ ...(cors ? { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, GET, OPTIONS" } : {}), ...extra });
+  const headers = (extra = {}) => ({ ...(cors ? { "access-control-allow-origin": "*", "access-control-allow-headers": "content-type", "access-control-allow-methods": "POST, GET, OPTIONS", "access-control-expose-headers": "x-map-width, x-map-height, x-render-error" } : {}), ...extra });
   const send = (res, status, body, type = "application/json") => {
     const data = typeof body === "string" || Buffer.isBuffer(body) ? body : JSON.stringify(body);
     res.writeHead(status, headers({ "content-type": type, "content-length": Buffer.byteLength(data) }));
@@ -38,6 +40,7 @@ export function createRenderServer(service, { maxBodyBytes = 3_000_000, cors = t
   });
 
   return http.createServer(async (req, res) => {
+    let raw = false;
     try {
       const url = new URL(req.url, "http://localhost");
       if (req.method === "OPTIONS") { res.writeHead(204, headers()); res.end(); return; }
@@ -47,21 +50,36 @@ export function createRenderServer(service, { maxBodyBytes = 3_000_000, cors = t
       if (req.method === "POST" && (url.pathname === "/" || url.pathname === "/render")) {
         let body;
         try { body = JSON.parse(await readBody(req)); } catch (error) { if (error instanceof RequestError) throw error; throw new RequestError("the request body is not valid JSON"); }
+        raw = body?.raw === true;
         const result = await service.render(body);
-        if (body.raw === true) {
-          res.writeHead(200, headers({ "content-type": "image/png", "content-length": result.png.length, "x-map-width": String(result.mapWidth), "x-map-height": String(result.mapHeight) }));
+        const mapHeaders = { "x-map-width": String(result.mapWidth), "x-map-height": String(result.mapHeight) };
+        if (raw && !result.png) {
+          res.writeHead(200, headers({ "content-type": SVG_TYPE, "content-length": Buffer.byteLength(result.svg), ...mapHeaders }));
+          res.end(result.svg);
+          return;
+        }
+        if (raw) {
+          res.writeHead(200, headers({ "content-type": "image/png", "content-length": result.png.length, ...mapHeaders }));
           res.end(result.png);
           return;
         }
         const { png, ...rest } = result;
-        send(res, 200, { image: png.toString("base64"), mimeType: "image/png", ...rest });
+        send(res, 200, png ? { image: png.toString("base64"), mimeType: "image/png", ...rest } : rest);
         return;
       }
       send(res, 404, { error: "not found" });
     } catch (error) {
-      if (error instanceof RequestError) { send(res, error.status, { error: error.message }); return; }
-      console.error("render error:", error);
-      send(res, 500, { error: "internal error" });
+      if (!(error instanceof RequestError)) console.error("render error:", error);
+      const status = error instanceof RequestError ? error.status : 500;
+      const message = error instanceof RequestError ? error.message : "internal error";
+      // `svg: true` and the rasterizer failed: the error status, with the SVG (bare with `raw`, the error then in a header).
+      const partial = error?.partial;
+      if (partial && raw) {
+        res.writeHead(status, headers({ "content-type": SVG_TYPE, "content-length": Buffer.byteLength(partial.svg), "x-render-error": message.replace(/[^\x20-\x7e]/g, "?") }));
+        res.end(partial.svg);
+        return;
+      }
+      send(res, status, partial ? { error: message, ...partial } : { error: message });
     }
   });
 }

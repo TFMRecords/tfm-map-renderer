@@ -37,13 +37,13 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--concurrency N` | 2 | renders at the same time; further requests wait in a queue of 16 |
 | `--rasterizer-processes N` | `--concurrency` | child processes that rasterise ([below](#performance)); each draws one picture at a time. 0 rasterises in the server process |
 | `--timeout MS` | 30000 | per render |
-| `--max-pixels N` | 16777216 | largest output (width times height); at most 8192 per side |
+| `--max-pixels N` | 16777216 | largest output (width times height); at most 8192 per side. A larger picture is truncated ([below](#response)) |
 | `--no-map-images` | | do not fetch the map's own images ([below](#map-images)); also `TFM_MAP_IMAGES=0` |
 | `--max-map-images N` | 32 | most images fetched for one map |
 | `--max-image-bytes N` | 4000000 | largest image |
 | `--unofficial-images` | | also absolute URLs on other hosts, where the game can load them |
 | `--default-options JSON` | `$TFM_RENDER_DEFAULT_OPTIONS`, else none | renderer options every request gets unless it sets them itself (top level or in `options`), e.g. `'{"spawnMarkers":"editor"}'`; a bad value stops the start |
-| `--max-map-size WxH` | `$TFM_MAX_MAP_SIZE`, else none | soft limit in map pixels: a larger map (or `viewport`) is drawn only up to W x H from its top-left corner, with a `map-cropped` warning, instead of failing; one number sets both. Keep W x H within `--max-pixels` |
+| `--max-map-size WxH` | `$TFM_MAX_MAP_SIZE`, else none | soft limit in map pixels: a larger map (or `viewport`) is drawn only up to W x H from its top-left corner, with a `map-cropped` warning, instead of failing; one number sets both. A part above `--max-pixels` is then truncated |
 
 ## Endpoints
 
@@ -64,14 +64,25 @@ Responses allow any origin (CORS).
 |---|---|
 | `xml` | the map XML (required, at most 2 MB). Lenient parsing unless `"lenient": false` |
 | `width`, `height` | output size in pixels, 1 to 8192. One alone keeps the aspect ratio; both stretch the map to that size |
-| `raw` | `true`: the answer is the bare `image/png`, with `x-map-width` and `x-map-height` headers |
-| `svg` | `true`: the answer also contains the SVG |
+| `raw` | `true`: the answer is the bare `image/png` (or `image/svg+xml` with `"rasterize": false`), with `x-map-width` and `x-map-height` headers |
+| `svg` | `true`: the answer also contains the SVG, even when rasterising fails ([below](#errors)) |
+| `rasterize` | `false` (needs `"svg": true`): answer with the SVG only, at its own size; resvg is not used, so `width`, `height` and the pixel limits do not apply |
 | `lenient` | `false`: strict XML parsing |
 | `mapImages` | `false`: skip the map's own images for this request |
 | `options` | renderer options ([`renderer.md`](renderer.md#options)), JSON values only. Unknown names are an error |
 
 Any renderer option may also be given at the top level, and `mirror` is short for `mirrorX`; unknown top-level fields are
 ignored. Without `width` and `height` the output is the map size times `scale`.
+
+| `svg` | `rasterize` | `raw` | Answer |
+|---|---|---|---|
+| | | | JSON with the PNG |
+| `true` | | | JSON with the PNG and the SVG |
+| | | `true` | the bare PNG |
+| `true` | | `true` | the bare PNG |
+| `true` | `false` | | JSON with the SVG |
+| `true` | `false` | `true` | the bare SVG |
+| | `false` | | 400 |
 
 ```sh
 curl -s localhost:3000/render -H 'content-type: application/json' \
@@ -88,14 +99,21 @@ curl -s localhost:3000/render -H 'content-type: application/json' \
 `clientLoads` is `false` when the game would fail to load the map; `warnings` are the first 50 XML diagnostics. With map images on,
 `mapImages` is `{ requested, loaded, missing }` and a `map-image-unavailable` warning counts the images that could not be loaded. With
 `--max-map-size`, a map cut down to that size gets a `map-cropped` warning with the drawn part (`x`, `y`, `width`, `height`, in map
-pixels); `mapWidth` and `mapHeight` stay the map's own size. A repeated
-identical request is answered from a cache of 64 results and has `"cached": true`.
+pixels); `mapWidth` and `mapHeight` stay the map's own size. A picture above the output limits (8192 per side, `--max-pixels` in
+all) is truncated, not scaled: the width is kept up to 8192, then the rows that fit, and only that top-left part of the map is
+drawn; an `image-truncated` warning gives the size asked for (`requestedWidth`, `requestedHeight`) and the size drawn (`width`,
+`height`). With `svg: true` the SVG is the one rasterised, so it is truncated too. A repeated identical request is answered from a
+cache of 64 results and has `"cached": true`.
 
-Errors are `{ "error": "message" }`:
+## Errors
+
+Errors are `{ "error": "message" }`. When rasterising fails (a crash, or the timeout) and the request has `"svg": true`, the error
+status stays and the body also has the SVG and the rest of the answer except the image (`svg`, `warnings`, `mapWidth`, ...); with
+`"raw": true` the body is the bare SVG and the message is in the `x-render-error` header.
 
 | Status | When |
 |---|---|
-| 400 | not JSON, missing `xml`, XML that cannot be parsed, an unknown or invalid option, an output above the size limits |
+| 400 | not JSON, missing `xml`, XML that cannot be parsed, an unknown or invalid option, `"rasterize": false` without `"svg": true`, a viewport or scale above the renderer's `limits` |
 | 404 | another path |
 | 413 | `xml` above 2 MB, or the body above 3 MB |
 | 422 | the picture crashed the rasteriser's process (a resvg bug; the server keeps running) |

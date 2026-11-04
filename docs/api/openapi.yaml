@@ -22,7 +22,7 @@ paths:
             schema: { $ref: "#/components/schemas/RenderRequest" }
       responses:
         "200":
-          description: The rendered map. JSON by default; the bare PNG when `raw` is true.
+          description: The rendered map. JSON by default; the bare PNG when `raw` is true, the bare SVG with `raw` and `rasterize` false.
           headers:
             x-map-width: { description: "Map width (only with raw: true).", schema: { type: integer } }
             x-map-height: { description: "Map height (only with raw: true).", schema: { type: integer } }
@@ -31,6 +31,8 @@ paths:
               schema: { $ref: "#/components/schemas/RenderResponse" }
             image/png:
               schema: { type: string, format: binary }
+            image/svg+xml:
+              schema: { type: string }
         "400": { $ref: "#/components/responses/Error" }
         "413": { $ref: "#/components/responses/Error" }
         "422": { $ref: "#/components/responses/Error" }
@@ -58,7 +60,11 @@ paths:
 components:
   responses:
     Error:
-      description: An error
+      description: >
+        An error. When rasterising fails and the request has svg true, the body also has the rest of the answer except the image
+        (svg, warnings, mapWidth, ...); with raw true it is the bare SVG and the message is in the x-render-error header.
+      headers:
+        x-render-error: { description: "The error message, when the body is the bare SVG.", schema: { type: string } }
       content:
         application/json:
           schema:
@@ -66,6 +72,9 @@ components:
             required: [error]
             properties:
               error: { type: string }
+              svg: { type: string, description: Only when rasterising failed and the request has svg true. }
+        image/svg+xml:
+          schema: { type: string }
   schemas:
     RenderRequest:
       type: object
@@ -75,8 +84,9 @@ components:
         xml: { type: string, description: Map XML, at most 2 MB. }
         width: { type: integer, minimum: 1, maximum: 8192, description: Output width; alone it keeps the aspect ratio. }
         height: { type: integer, minimum: 1, maximum: 8192, description: Output height; with width it stretches the map. }
-        raw: { type: boolean, default: false, description: Answer with the bare image/png. }
-        svg: { type: boolean, default: false, description: Also return the SVG. }
+        raw: { type: boolean, default: false, description: "Answer with the bare image/png (image/svg+xml with rasterize: false)." }
+        svg: { type: boolean, default: false, description: Also return the SVG, also next to a rasterising error. }
+        rasterize: { type: boolean, default: true, description: "false (needs svg: true) answers with the SVG only, at its own size; width, height and the pixel limits do not apply." }
         lenient: { type: boolean, default: true, description: false parses the XML strictly. }
         mapImages: { type: boolean, default: true, description: false skips the map's own images for this request. }
         mirror: { type: boolean, description: Same as options.mirrorX. }
@@ -170,7 +180,7 @@ components:
     RenderResponse:
       type: object
       properties:
-        image: { type: string, format: byte, description: Base64 PNG. }
+        image: { type: string, format: byte, description: "Base64 PNG; absent with rasterize: false." }
         mimeType: { type: string, example: image/png }
         width: { type: integer }
         height: { type: integer }
@@ -178,7 +188,7 @@ components:
         mapHeight: { type: integer }
         backend: { type: string, example: resvg }
         clientLoads: { type: boolean, nullable: true, description: false when the game would fail to load the map. }
-        warnings: { type: array, description: "The first 50 XML diagnostics, plus map-image-unavailable and map-cropped (with --max-map-size: x, y, width, height of the drawn part).", items: { type: object } }
+        warnings: { type: array, description: "The first 50 XML diagnostics, plus map-image-unavailable, map-cropped (with --max-map-size: x, y, width, height of the drawn part) and image-truncated (requestedWidth, requestedHeight, and the width and height drawn).", items: { type: object } }
         svg: { type: string, description: Only with svg true. }
         cached: { type: boolean, description: Present and true when answered from the result cache. }
         mapImages:

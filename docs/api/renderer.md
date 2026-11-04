@@ -62,6 +62,7 @@ and the server's list in step.
 | `randomBackgroundIndex` | which candidate `F="-2"` picks when not composite |
 | `randomDecorationFlip` [false] | decorations with flip code 2 flip by a seeded coin instead of staying unflipped |
 | `renderJoints` [true] | joints that have a style `c` |
+| `jointAngles` [true] | a ground that a prismatic joint turns (`JP` with `A`; Miceditor's boosters) is drawn at the angle the joint turns it to, as the game shows it once the map starts and as Miceditor draws it; `false` keeps the XML rotation ([`../xml/joints.md`](../xml/joints.md#joint-angles)) |
 | `renderAppearingImages` [false] | `ARPS` images, as if shown |
 | `renderIpImages` [false] | `IP` images, as if shown (alias `renderPortalImages`) |
 | `renderTiledBackgrounds` [false] | tiled `D="#url,w,h"` backgrounds (external images) |

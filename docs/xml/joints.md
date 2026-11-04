@@ -73,6 +73,18 @@ Which attributes each kind reads:
 `M1` and `M2` are indexes into the map's ground list, in XML order, after the limits of a restricted map. A joint whose ground
 does not exist is not made.
 
+## Joint angles
+
+A `JP` holds its two grounds at a fixed angle to each other: the game sets `A` (radians) as the joint's reference angle, and the
+physics keeps the rotation of `M2` minus the rotation of `M1` equal to `A` (inferred: the client fills the joint definition in the
+order of Box2D's `b2PrismaticJointDef`, and Miceditor reads its boosters the same way). A ground that can turn (dynamic, without
+fixed rotation) joined to one that cannot is turned to that angle as soon as the map starts: `M1` to `M2`'s rotation minus `A`,
+or `M2` to `M1`'s plus `A`. A missing `A` is 0 (`Gajeb.jahej`) and is still set, so such a joint lines the turning ground up
+with the other one. The joint's axis is fixed in `M1`'s frame at its XML rotation, so that rotation still sets the direction
+the joint slides in (Miceditor uses it for the booster's direction). Miceditor's boosters are this: a dynamic ground with two `JP` (axes `-1,0` and `0,1`) to a static
+ground, shown at `-A`. The renderer draws such grounds at that angle (option `jointAngles`, on by default). When both grounds can
+turn the result depends on the physics, and they are drawn as in the XML.
+
 ## Anchors
 
 Points are `x,y` in map pixels (each `int`); the physics divides them by 30 and a mirrored room mirrors them. A missing anchor is

@@ -8,6 +8,21 @@ import { packScene } from "./scene-transfer.js";
 import { renderScenePng, createPictureCache } from "../raster/index.js";
 
 const WORKER = new URL("./rasterize-worker.js", import.meta.url);
+
+/**
+ * The parent's Node flags for a child, without the script of `node -e` / `-p` (Node keeps it in execArgv: the child would run it
+ * again, and a script that starts a pool would start pools without end) and `--input-type` (refused for a file).
+ */
+export function childExecArgv(argv = process.execArgv) {
+  const out = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "-e" || arg === "--eval" || arg === "-p" || arg === "--print" || arg === "-pe") { i++; continue; }
+    if (/^(--eval|--print|--input-type)(=|$)/.test(arg)) continue;
+    out.push(arg);
+  }
+  return out;
+}
 const MISSING = "the render server needs the optional package @resvg/resvg-js (npm install @resvg/resvg-js)";
 
 /** A child process ended while drawing (a resvg panic, or killed): the SVG is the likely cause. `status` 422 for the HTTP answer. */
@@ -95,7 +110,7 @@ function createPool(size, { pictureCacheBytes }) {
 
   // A child is ready once it has loaded resvg; `ready` rejects when it cannot.
   function spawn(slot) {
-    const child = fork(WORKER, [], { serialization: "advanced", stdio: ["ignore", "inherit", "inherit", "ipc"], env });
+    const child = fork(WORKER, [], { serialization: "advanced", stdio: ["ignore", "inherit", "inherit", "ipc"], env, execArgv: childExecArgv() });
     slot.child = child;
     slot.ready = new Promise((resolve, reject) => {
       child.once("message", (message) => {

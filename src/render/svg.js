@@ -44,6 +44,12 @@ function normalizeViewport(map, options) {
 
 const ALL = () => true;
 
+/** The map as the renderer draws it: the client's limits applied, then the grounds turned by their joints (`jointAngles`). */
+function prepareMap(map, clientLimits, options) {
+  const limited = applyClientLimits(map, clientLimits);
+  return options.jointAngles === false ? limited : settleJointAngles(limited);
+}
+
 /**
  * `fitContent`: the box of everything drawn on the map (grounds, decorations, objects, joints, holes, spawns, the map's images,
  * overlays), whatever the map's size, so it can start left of or above (0, 0). The map's own background (`F`, tiled `D`, the
@@ -175,10 +181,41 @@ function renderDImages(records, resolver, kind, fallbackWidth, fallbackHeight, s
   return out;
 }
 
+/**
+ * `jointAngles`: a prismatic joint (`JP`) holds its grounds at a fixed angle to each other: the client sets its `A` as the joint's
+ * reference angle (Paw: `derilugy` after `dekyjac`, b2PrismaticJointDef order), and Box2D keeps angle(M2) - angle(M1) = A. A
+ * ground that can turn (dynamic, not fixed rotation) is turned there as soon as the map starts, so it is drawn at that angle,
+ * as Miceditor draws its boosters (two `JP` to a static ground; it shows the ground at -A). When both grounds can turn, physics
+ * decides and they stay as in the XML; so do Lua joints. Joints apply in map order. Returns `map` itself when nothing turns.
+ */
+function settleJointAngles(map) {
+  const grounds = map.grounds ?? [];
+  const turned = new Map(); // index -> rotation in degrees
+  const rotationOf = (i) => turned.get(i) ?? groundGeometry(grounds[i]).rotation;
+  const turns = (g) => {
+    const physics = g.derived?.physics?.normalized ?? g.physics;
+    return g.derived?.packedPhysicsApplies !== false && physics?.dynamic === true && physics.fixedRotation !== true;
+  };
+  for (const joint of map.joints ?? []) {
+    // A missing or bad `A` is 0 in the client (`Gajeb.jahej`), and is set all the same.
+    if (joint.kind !== "JP" || joint.clientLuaId || joint.lua != null || joint.m1 === joint.m2) continue;
+    const a = grounds[joint.m1], b = grounds[joint.m2];
+    if (!a || !b || turns(a) === turns(b)) continue;
+    const degrees = ((Number.isFinite(joint.angle) ? joint.angle : 0) * 180) / Math.PI;
+    if (turns(a)) turned.set(joint.m1, rotationOf(joint.m2) - degrees);
+    else turned.set(joint.m2, rotationOf(joint.m1) + degrees);
+  }
+  if (!turned.size) return map;
+  return {
+    ...map,
+    grounds: grounds.map((g, i) => (turned.has(i) ? { ...g, physics: { ...g.physics, rotation: turned.get(i) }, jointRotation: turned.get(i) } : g)),
+  };
+}
+
 function groundGeometry(ground) {
   const width = finiteOr(ground.derived?.width, ground.width);
   const height = finiteOr(ground.derived?.height, ground.height);
-  const rotation = finiteOr(ground.derived?.physics?.normalized?.rotation, finiteOr(ground.physics?.rotation, 0));
+  const rotation = finiteOr(ground.jointRotation, finiteOr(ground.derived?.physics?.normalized?.rotation, finiteOr(ground.physics?.rotation, 0)));
   return { x: finiteOr(ground.x, 0), y: finiteOr(ground.y, 0), width, height, rotation, circle: ground.type === 13 };
 }
 
@@ -677,7 +714,7 @@ function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = 
 export function renderedViewport(map, options = {}) {
   if (!map?.settings) throw new TypeError("renderedViewport expects a parsed TfmMap");
   const clientLimits = resolveClientLimits(options.clientLimits ?? (options.restricted === true ? "restricted" : "unrestricted"));
-  return normalizeViewport(applyClientLimits(map, clientLimits), options);
+  return normalizeViewport(prepareMap(map, clientLimits, options), options);
 }
 
 /**
@@ -721,6 +758,8 @@ function assertWithinLimits(width, height, limits) {
  * tiled `D` and repeat clones off; `"module"`, a `#Module` room: no caps, ARPS off) or an object of custom
  * values (`{ preset: "restricted", maxGrounds: 200 }`). `restricted: true` is an alias of `clientLimits: "restricted"`. The parsed
  * map is never modified. (`limits` is something else: the maximum output size in pixels.)
+ * `jointAngles` (default true) draws a ground that a prismatic joint (`JP` with `A`, Miceditor's boosters) turns at the angle it
+ * turns it to (`settleJointAngles`); `false` keeps the XML rotation.
  * `fitContent: true` (without `viewport`) draws everything on the map and nothing more: the viewport is the box of the content
  * (`contentViewport`), whatever the map's size, and can start left of or above (0, 0).
  * `maxViewport: { width, height }` is a soft limit in map units: a larger viewport (or map, without one) is cut down to it from its
@@ -753,7 +792,7 @@ export function renderTfmScene(map, options = {}) {
   if (!map?.settings) throw new TypeError("renderTfmScene expects a parsed TfmMap");
   const clientLimits = resolveClientLimits(options.clientLimits ?? (options.restricted === true ? "restricted" : "unrestricted"));
   const modules = resolveModuleOptions(options.modules);
-  map = applyClientLimits(map, clientLimits);
+  map = prepareMap(map, clientLimits, options);
   const viewport = normalizeViewport(map, options);
   const scale = finiteOr(options.scale, 1);
   if (scale <= 0) throw new RangeError("SVG scale must be positive");

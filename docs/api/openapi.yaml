@@ -139,6 +139,7 @@ components:
         rotation: { type: number }
         borders: { type: string, enum: [none, map, all] }
         debugMarkers: { type: boolean }
+        jointAngles: { type: boolean, default: true, description: "Grounds turned by a prismatic joint (JP with A, Miceditor's boosters) are drawn at that angle; false keeps the XML rotation." }
         fitContent: { type: boolean, default: false, description: "Without viewport: draw everything on the map and nothing more, whatever the map's size (the viewport can start left of or above 0, 0)." }
         viewport:
           type: object

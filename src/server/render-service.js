@@ -15,7 +15,7 @@ export const ALLOWED_OPTIONS = Object.freeze({
   renderJoints: "boolean", renderAppearingImages: "boolean", renderIpImages: "boolean", renderSoulmateHeart: "boolean", renderHideOffscreenFrame: "boolean",
   renderTiledBackgrounds: "boolean", compositeRandomBackground: "boolean", randomBackgroundIndex: "number", randomDecorationFlip: "boolean",
   textures: "boolean", textureSeed: "number", pregeneratedBitmaps: "boolean", cheeseSuffix: "string", defaultAssets: "boolean", flashBlur: "boolean",
-  scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport", fitContent: "boolean",
+  scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport", fitContent: "boolean", jointAngles: "boolean",
   modules: "modules", parkourNails: "boolean", parkourStyle: "parkour-style",
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */

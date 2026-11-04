@@ -41,6 +41,7 @@ export const OPTION_HELP = Object.freeze({
   spawnMarkers: ["Editor", "editor", "editor (the editor's spawn pictures; circles without the asset release), circles or none (the game)"],
   debugMarkers: ["Editor", "false", "outlines at every decoration and object position"],
   renderJoints: ["Editor", "true", "joints that have a style c"],
+  jointAngles: ["Game", "true", "grounds a prismatic joint (JP A, Miceditor's boosters) turns, drawn at that angle; false: the XML rotation"],
   renderAppearingImages: ["Shown later", "false", "ARPS images, as if shown"],
   renderIpImages: ["Shown later", "false", "IP images, as if shown"],
   renderTiledBackgrounds: ["Shown later", "false", "tiled D=#url,w,h backgrounds (external images)"],

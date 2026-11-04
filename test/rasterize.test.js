@@ -135,3 +135,9 @@ test("with the pool: a map drawn by the compositor through the service is close 
     rasterizer.close();
   }
 });
+
+test("a child gets the parent's Node flags but not the script of node -e or --input-type", async () => {
+  const { childExecArgv } = await import("../src/server/rasterize.js");
+  assert.deepEqual(childExecArgv(["--max-old-space-size=4096", "--input-type=module", "-e", "startPool()", "--no-warnings"]), ["--max-old-space-size=4096", "--no-warnings"]);
+  assert.deepEqual(childExecArgv(["--eval=x()", "-p", "y", "--print", "z"]), []);
+});

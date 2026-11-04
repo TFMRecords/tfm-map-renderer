@@ -358,6 +358,8 @@ Decorations with `P` = `0,2` (flip with probability 1/2 in the client) are drawn
 tiled `D` and repeat clones off; `"module"`, a `#Module` room: no caps, ARPS off) or an object of custom
 values (`{ preset: "restricted", maxGrounds: 200 }`). `restricted: true` is an alias of `clientLimits: "restricted"`. The parsed
 map is never modified. (`limits` is something else: the maximum output size in pixels.)
+`jointAngles` (default true) draws a ground that a prismatic joint (`JP` with `A`, Miceditor's boosters) turns at the angle it
+turns it to (`settleJointAngles`); `false` keeps the XML rotation.
 `fitContent: true` (without `viewport`) draws everything on the map and nothing more: the viewport is the box of the content
 (`contentViewport`), whatever the map's size, and can start left of or above (0, 0).
 `maxViewport: { width, height }` is a soft limit in map units: a larger viewport (or map, without one) is cut down to it from its

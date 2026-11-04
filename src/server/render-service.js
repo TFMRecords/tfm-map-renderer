@@ -77,7 +77,8 @@ export function sizeSvg(svg, width, height) {
  * @param {{rasterize: Function, renderScene?: Function, name: string}} config.rasterizer `rasterize(svg, { width, height, signal })`
  *   for resvg, `renderScene(scene, { width, height, signal })` for the compositor (src/server/rasterize.js); `signal` aborts on
  *   timeout. A `RasterizerCrashError` (the picture crashed the rasterizer's process) is answered with 422
- * @param {"resvg"|"compositor"} [config.renderer] how PNGs are drawn unless a request sets `renderer`; default resvg
+ * @param {"resvg"|"compositor"} [config.renderer] how PNGs are drawn unless a request sets `renderer`; default
+ *   the compositor when the rasterizer has `renderScene`, else resvg
  * @param {object} [config.assetResolver] resolver of the loaded asset release (placeholders when absent)
  * @param {number} [config.maxXmlBytes] default 2 MB
  * @param {number} [config.maxPixels] largest output (width * height), default 4096 * 4096
@@ -91,9 +92,10 @@ export function sizeSvg(svg, width, height) {
  * @param {{width:number, height:number}} [config.maxMapSize] soft limit in map units: a larger map (or viewport) is drawn only up to
  *   this size from its top-left corner, with a `map-cropped` warning, instead of failing. Default none
  */
-export function createRenderService({ rasterizer, renderer: defaultRenderer = "resvg", assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64, maxMapSize = null }) {
+export function createRenderService({ rasterizer, renderer: askedRenderer, assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64, maxMapSize = null }) {
   const defaults = Object.freeze(parseOptions({ options: defaultOptions }));
   const canCompose = typeof rasterizer?.renderScene === "function";
+  const defaultRenderer = askedRenderer ?? (canCompose ? "compositor" : "resvg");
   if (!RENDERERS.includes(defaultRenderer)) throw new TypeError(`renderer must be one of ${RENDERERS.join(", ")}`);
   if (defaultRenderer === "compositor" && !canCompose) throw new TypeError("the compositor needs a rasterizer with renderScene");
   let running = 0;

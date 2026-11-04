@@ -53,7 +53,7 @@ paths:
                   ok: { type: boolean }
                   running: { type: integer, description: Renders in progress. }
                   waiting: { type: integer, description: Requests in the queue. }
-                  backend: { type: string, example: resvg }
+                  backend: { type: string, enum: [compositor, resvg], description: The default renderer (--renderer). }
                   rasterizerProcesses: { type: integer, description: Child processes that rasterize (0 = in the server process). }
                   release: { type: boolean, description: Whether an asset release is loaded. }
                   mapImages: { type: boolean, description: Whether the server fetches map images (off with --no-map-images). }
@@ -89,6 +89,7 @@ components:
         rasterize: { type: boolean, default: true, description: "false (needs svg: true) answers with the SVG only, at its own size; width, height and the pixel limits do not apply." }
         lenient: { type: boolean, default: true, description: false parses the XML strictly. }
         mapImages: { type: boolean, default: true, description: false skips the map's own images for this request. }
+        renderer: { type: string, enum: [compositor, resvg], description: "How the PNG is drawn; default the server's --renderer (compositor unless set)." }
         mirror: { type: boolean, description: Same as options.mirrorX. }
         options: { $ref: "#/components/schemas/RenderOptions" }
     RenderOptions:
@@ -186,7 +187,7 @@ components:
         height: { type: integer }
         mapWidth: { type: integer }
         mapHeight: { type: integer }
-        backend: { type: string, example: resvg }
+        backend: { type: string, enum: [compositor, resvg, svg], description: "What drew the picture: compositor, resvg (asked for, or the compositor-fallback warning), svg with rasterize: false." }
         clientLoads: { type: boolean, nullable: true, description: false when the game would fail to load the map. }
         warnings: { type: array, description: "The first 50 XML diagnostics, plus map-image-unavailable, map-cropped (with --max-map-size: x, y, width, height of the drawn part) and image-truncated (requestedWidth, requestedHeight, and the width and height drawn).", items: { type: object } }
         svg: { type: string, description: Only with svg true. }

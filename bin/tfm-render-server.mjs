@@ -8,8 +8,9 @@
 //   --concurrency N   simultaneous renders (default 2)       --timeout MS   per render (default 30000)       --max-pixels N   largest output (default 16777216)
 //   --rasterizer-processes N   child processes that rasterize (default: --concurrency); a resvg crash then ends one child, not the
 //                     server, and that request gets a 422. 0 rasterizes in the server process
-//   --renderer R      resvg (default) or compositor: how PNGs are drawn unless a request sets "renderer" (default $TFM_RENDERER).
-//                     compositor: the scene drawn in strips, the game's pictures rasterised by resvg and cached (docs/rendering.md#png-compositor)
+//   --renderer R      compositor (default) or resvg: how PNGs are drawn unless a request sets "renderer" (default $TFM_RENDERER).
+//                     compositor: the scene drawn in strips, the game's pictures rasterised by resvg and cached (docs/rendering.md#png-compositor);
+//                     resvg: the whole SVG drawn by resvg (smaller processes, slower, and more maps time out or crash it)
 //   --picture-cache-mb N   the compositor's picture cache in each rasterizer process (default 256)
 //   --no-map-images   do not fetch the map's own images (D, d, i, APS, ...); by default they are fetched from the game's image hosts,
 //                     cached in memory, and drawn ($TFM_MAP_IMAGES=0 also turns it off; a request can with "mapImages": false)
@@ -75,7 +76,7 @@ if (maxMapSizeText) {
   maxMapSize = { width: positive(w), height: positive(h) };
   console.log(`map size: drawn up to ${maxMapSize.width}x${maxMapSize.height}, larger maps are cropped`);
 }
-const renderer = args.renderer ?? process.env.TFM_RENDERER ?? "resvg";
+const renderer = args.renderer ?? process.env.TFM_RENDERER ?? "compositor";
 if (!RENDERERS.includes(renderer)) fail(`--renderer: one of ${RENDERERS.join(", ")}`);
 const rasterizer = await createResvgRasterizer({
   processes: whole(args["rasterizer-processes"], Number(args.concurrency ?? 2)),

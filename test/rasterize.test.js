@@ -105,17 +105,19 @@ test("the render service draws with the renderer a request or the server picks",
   };
   const xml = "<C><P/><Z><S/><D/><O/></Z></C>";
   const service = createRenderService({ rasterizer, cacheEntries: 0 });
-  assert.equal((await service.render({ xml })).backend, "resvg");
-  const composed = await service.render({ xml, renderer: "compositor" });
+  assert.equal((await service.render({ xml, renderer: "resvg" })).backend, "resvg");
+  const composed = await service.render({ xml });
   assert.equal(composed.backend, "compositor");
   assert.equal(composed.svg, undefined);
   assert.match((await service.render({ xml, renderer: "compositor", svg: true })).svg, /^<svg/);
   assert.deepEqual(calls, ["resvg", "svg", "svg"]);
   await assert.rejects(service.render({ xml, renderer: "cairo" }), (error) => error.status === 400);
-  assert.equal((await createRenderService({ rasterizer, renderer: "compositor" }).render({ xml })).backend, "compositor");
+  assert.equal((await createRenderService({ rasterizer, renderer: "resvg" }).render({ xml })).backend, "resvg");
+  assert.equal(calls.at(-1), "resvg");
   const plain = { name: "fake", async rasterize(svg, { width, height }) { return { png: Buffer.alloc(0), width, height }; } };
   assert.throws(() => createRenderService({ rasterizer: plain, renderer: "compositor" }), TypeError);
   await assert.rejects(createRenderService({ rasterizer: plain }).render({ xml, renderer: "compositor" }), (error) => error.status === 400);
+  assert.equal((await createRenderService({ rasterizer: plain }).render({ xml })).backend, "fake", "without renderScene the default is resvg");
 });
 
 test("with the pool: a map drawn by the compositor through the service is close to resvg's", { skip: !hasResvg }, async () => {

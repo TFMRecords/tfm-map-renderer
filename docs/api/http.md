@@ -36,7 +36,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--no-share-assets` | | every placement of a picture as its own `<image>` (slower; see "Performance") |
 | `--concurrency N` | 2 | renders at the same time; further requests wait in a queue of 16 |
 | `--rasterizer-processes N` | `--concurrency` | child processes that rasterise ([below](#performance)); each draws one picture at a time. 0 rasterises in the server process |
-| `--renderer R` | `$TFM_RENDERER`, else `resvg` | how PNGs are drawn unless a request sets `renderer`: `resvg` from the SVG, or `compositor` from the scene ([`../rendering.md`](../rendering.md#png-compositor)) |
+| `--renderer R` | `$TFM_RENDERER`, else `compositor` | how PNGs are drawn unless a request sets `renderer`: `compositor` from the scene ([`../rendering.md`](../rendering.md#png-compositor)), or `resvg` from the SVG (smaller processes, slower) |
 | `--picture-cache-mb N` | 256 | the compositor's picture cache in each rasteriser process |
 | `--timeout MS` | 30000 | per render |
 | `--max-pixels N` | 16777216 | largest output (width times height); at most 8192 per side. A larger picture is truncated ([below](#response)) |
@@ -96,7 +96,7 @@ curl -s localhost:3000/render -H 'content-type: application/json' \
 
 ```json
 { "image": "<base64 PNG>", "mimeType": "image/png", "width": 800, "height": 400,
-  "mapWidth": 800, "mapHeight": 400, "backend": "resvg", "clientLoads": true, "warnings": [] }
+  "mapWidth": 800, "mapHeight": 400, "backend": "compositor", "clientLoads": true, "warnings": [] }
 ```
 
 `clientLoads` is `false` when the game would fail to load the map; `warnings` are the first 50 XML diagnostics. With map images on,

@@ -87,7 +87,14 @@ test("the test page is served at /test and to browsers at /, plain usage text ot
   try {
     const page = await fetch(base + "/test");
     assert.match(page.headers.get("content-type"), /text\/html/);
-    assert.match(await page.text(), /<textarea id="xml"/);
+    const html = await page.text();
+    assert.match(html, /<textarea id="xml"/);
+    // The page script compiles, and its form lists every request option.
+    const script = /<script>([\s\S]*)<\/script>/.exec(html)[1];
+    assert.doesNotThrow(() => new Function(script));
+    const schema = JSON.parse(/const SCHEMA = (.*);\n/.exec(script)[1]);
+    assert.deepEqual(schema.options.map(([name]) => name), Object.keys(ALLOWED_OPTIONS));
+    assert.ok(schema.request.some(([name]) => name === "renderer"));
     assert.match(await (await fetch(base, { headers: { accept: "text/html" } })).text(), /<!doctype html>/);
     assert.match(await (await fetch(base)).text(), /^tfm-render-server/);
   } finally { server.close(); }
@@ -107,6 +114,12 @@ import { readFile } from "node:fs/promises";
 import { ALLOWED_OPTIONS } from "../src/server/render-service.js";
 
 const RENDERER_DOC = new URL("../docs/api/renderer.md", import.meta.url);
+
+test("the test page has help for every option the server accepts", async () => {
+  const { OPTION_HELP } = await import("../src/server/test-page.js");
+  assert.deepEqual(Object.keys(ALLOWED_OPTIONS).filter((name) => !OPTION_HELP[name]), []);
+  assert.deepEqual(Object.keys(OPTION_HELP).filter((name) => !(name in ALLOWED_OPTIONS)), []);
+});
 
 test("every option the server accepts is documented in docs/api/renderer.md", { skip: !existsSync(RENDERER_DOC) && "docs/api/renderer.md is not written yet (phase 3)" }, async () => {
   const doc = await readFile(RENDERER_DOC, "utf8");

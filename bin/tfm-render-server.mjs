@@ -93,4 +93,4 @@ try {
 } catch (error) { fail(`--default-options: ${error.message}`); }
 const server = createRenderServer(service, { info: { backend: renderer === "compositor" ? "compositor" : rasterizer.name, rasterizerProcesses: rasterizer.processes, release: Boolean(assetResolver), mapImages: Boolean(mapImages) } });
 const port = Number(args.port ?? process.env.PORT ?? 3000);
-server.listen(port, args.host ?? "127.0.0.1", () => console.log(`tfm-render-server (${rasterizer.name}) listening on http://${args.host ?? "127.0.0.1"}:${port}`));
+server.listen(port, args.host ?? "127.0.0.1", () => console.log(`tfm-render-server (${renderer}) listening on http://${args.host ?? "127.0.0.1"}:${port}`));

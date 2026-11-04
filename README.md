@@ -9,7 +9,7 @@ game itself draws.
   cheese, backgrounds, joints, map images, mirrored and minimalist modes, the limits of restricted maps). Deterministic, no
   network access.
 - **Assets**: builds the pictures from the game's SWF files with FFDec, on your machine.
-- **Server**: XML in, PNG out (resvg, no browser), with a test page.
+- **Server**: XML in, PNG out (the PNG compositor, or resvg; no browser), with a test page.
 - **XML reference**: [`docs/xml/`](docs/xml/README.md) describes every element and attribute of the format, how the game
   reads it, and what is still unknown.
 

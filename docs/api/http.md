@@ -53,7 +53,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 |---|---|
 | `POST /` or `POST /render` | render (below) |
 | `GET /health` | `{ ok, running, waiting, backend, release, mapImages }` (`backend` the default renderer) |
-| `GET /test`, or `GET /` from a browser | a test page: paste XML or pick a file, edit the request JSON, press Render (Ctrl+Enter) |
+| `GET /test`, or `GET /` from a browser | a test page: paste XML or pick a file; set any request field or renderer option in a form (it edits the request JSON, and the JSON edits it); Render (Ctrl+Enter) shows the PNG, the whole SVG (previewed by the browser, copied or downloaded; fetched on demand when the answer has none), the warnings and the response |
 | `GET /` | usage text |
 
 Responses allow any origin (CORS).

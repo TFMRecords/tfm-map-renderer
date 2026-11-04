@@ -148,6 +148,33 @@ The renderer first builds a scene (`renderTfmScene`, src/render/scene.js): a tre
 
 A definition comes before the first node that refers to it.
 
+## PNG compositor
+
+In progress, not yet used by the server: `src/raster` (`tfm-map-renderer/raster`) draws a scene straight into pixels, without
+writing SVG or passing the whole picture to resvg. `renderSceneStrips(scene, { pictures, onStrip })` draws horizontal strips
+of about 16 MB of working pixels (`stripBytes`) and hands each one over as RGBA; `renderScenePng` writes them into a PNG as
+they come. Memory is one strip, the picture cache and the compressed PNG, whatever the size of the output.
+
+The game's pictures (the `image` nodes) come from a picture cache (`createPictureCache({ rasterize })`), which rasterises each one
+in device space: with its placement's scale, rotation and flip and its sub-pixel offset (to 1/8 pixel), so the compositor
+copies its pixels without resampling and it is as sharp as in resvg's picture. Placements a whole number of pixels apart share
+a raster; rasters are kept up to `maxBytes` (256 MB). A picture is always rasterised whole: resvg panics on crops much narrower
+than the picture ($F_4 at 6x, 9603 px wide, panics in crops up to 4000 px wide), so a picture above `maxPixels` (4096 x 4096)
+is rasterised smaller and stretched, and is softer. The server's rasteriser is resvg (`loadResvgPixels` in
+src/server/rasterize.js); the compositor itself is plain JS.
+
+Everything else the compositor draws itself: rectangles, circles and ellipses with smoothed edges, rectangular clips, the
+texture tiles (`use` of a `symbol`; inside a tile, edges are hard, so the tiles meet without seams), colour-matrix filters (on
+the group's own layer), and the `overlay` blend of the textures. Not drawn yet, and counted in `unsupported`: lines (`path`,
+the joints and the parkour labels), strokes of shapes, `text` (placeholders of objects without a picture) and the glow filter
+of holes.
+
+Compared with resvg on the test maps (800 x 400, with the release) the mean difference per pixel is below 1 of 255 for most
+maps and under 2.5 for all, and at most 0.6 % of the pixels differ by more than 48, all in maps with what is not drawn yet. On a
+sample of 278 maps of the real-map corpus, the 218 without joints stay under 0.7 %. With its pictures cached the compositor
+draws the test maps about 6 times as fast as resvg (0.7 s against 4.6 s); without, about 1.7 times (most of that time is resvg
+rasterising the pictures).
+
 ## Renderer choices
 
 Where the game and the editor differ, or the game is random, the renderer has an option. Defaults: the game's picture, except

@@ -13,6 +13,7 @@
     ".": "./src/index.js",
     "./node": "./src/node.js",
     "./render": "./src/render/index.js",
+    "./raster": "./src/raster/index.js",
     "./assets/url-policy": "./src/assets/url-policy.js",
     "./spec": "./src/tfm/spec/index.js"
   },

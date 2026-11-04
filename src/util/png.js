@@ -1,5 +1,5 @@
 // Minimal PNG reader and writer (8-bit, non-interlaced; grey, grey+alpha, RGB, RGBA, palette) for the screenshot comparison tool. No dependencies.
-import { inflateSync, deflateSync } from "node:zlib";
+import { inflateSync, deflateSync, createDeflate } from "node:zlib";
 
 const SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -74,6 +74,55 @@ function chunk(type, body) {
   body.copy(out, 8);
   out.writeUInt32BE(crc32(out.subarray(4, 8 + body.length)), 8 + body.length);
   return out;
+}
+
+/**
+ * A PNG written strip by strip: `write(rgba, rows)` takes the next rows (straight-alpha RGBA) and compresses them at once, so
+ * only the compressed image is kept; `finish()` returns the file. Rows are filtered with Sub or Up, whichever is smaller.
+ * @param {{width: number, height: number, level?: number}} image `level` the zlib level (default 6)
+ */
+export function createPngWriter({ width, height, level = 6 }) {
+  const deflate = createDeflate({ level });
+  const parts = [];
+  deflate.on("data", (part) => parts.push(part));
+  const done = new Promise((resolve, reject) => { deflate.on("end", resolve); deflate.on("error", reject); });
+  const stride = width * 4;
+  let previous = new Uint8Array(stride);
+  let written = 0;
+  return {
+    async write(rgba, rows) {
+      if (written + rows > height) throw new RangeError("more rows than the image height");
+      const raw = Buffer.alloc((stride + 1) * rows);
+      for (let y = 0; y < rows; y++) {
+        const row = rgba.subarray(y * stride, (y + 1) * stride);
+        let sub = 0, up = 0;
+        for (let i = 0; i < stride; i++) {
+          const s = (row[i] - (i >= 4 ? row[i - 4] : 0)) & 255, u = (row[i] - previous[i]) & 255;
+          sub += s < 128 ? s : 256 - s;
+          up += u < 128 ? u : 256 - u;
+        }
+        const o = y * (stride + 1);
+        if (up < sub) {
+          raw[o] = 2;
+          for (let i = 0; i < stride; i++) raw[o + 1 + i] = row[i] - previous[i];
+        } else {
+          raw[o] = 1;
+          for (let i = 0; i < stride; i++) raw[o + 1 + i] = row[i] - (i >= 4 ? row[i - 4] : 0);
+        }
+        previous = Uint8Array.from(row);
+      }
+      written += rows;
+      if (!deflate.write(raw)) await new Promise((resolve) => deflate.once("drain", resolve));
+    },
+    async finish() {
+      if (written !== height) throw new RangeError(`${written} of ${height} rows written`);
+      deflate.end();
+      await done;
+      const ihdr = Buffer.alloc(13);
+      ihdr.writeUInt32BE(width, 0); ihdr.writeUInt32BE(height, 4); ihdr[8] = 8; ihdr[9] = 6;
+      return Buffer.concat([SIGNATURE, chunk("IHDR", ihdr), chunk("IDAT", Buffer.concat(parts)), chunk("IEND", Buffer.alloc(0))]);
+    },
+  };
 }
 
 /** @param {{width:number, height:number, data:Uint8ClampedArray|Uint8Array}} image RGBA */

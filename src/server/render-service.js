@@ -2,7 +2,7 @@
 // (`{ xml, raw?, width?, height? }`) plus the renderer's options; the answer is JSON with the image in base64 (or the bare PNG with `raw: true`). No upload anywhere.
 import { createHash } from "node:crypto";
 import { parseTfmDocument } from "../tfm/parse-map.js";
-import { renderTfmSvg } from "../render/svg.js";
+import { renderTfmSvg, renderedViewport } from "../render/svg.js";
 import { shareSvgAssets } from "../render/share-assets.js";
 import { RENDER_MODULES } from "../render/modules/index.js";
 
@@ -76,8 +76,10 @@ export function sizeSvg(svg, width, height) {
  *   drawn; a request turns it off with `"mapImages": false`. Without it they are not drawn (docs/api/http.md#map-images)
  * @param {object} [config.defaultOptions] renderer options every request gets unless it sets them itself (same names and checks as a
  *   request's `options`; a bad value throws here)
+ * @param {{width:number, height:number}} [config.maxMapSize] soft limit in map units: a larger map (or viewport) is drawn only up to
+ *   this size from its top-left corner, with a `map-cropped` warning, instead of failing. Default none
  */
-export function createRenderService({ rasterizer, assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64 }) {
+export function createRenderService({ rasterizer, assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64, maxMapSize = null }) {
   const defaults = Object.freeze(parseOptions({ options: defaultOptions }));
   let running = 0;
   const waiting = [];
@@ -96,7 +98,7 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     for (const key of ["width", "height"]) {
       if (body[key] != null && !(Number.isInteger(body[key]) && body[key] >= 1 && body[key] <= maxDimension)) throw new RequestError(`"${key}" must be an integer from 1 to ${maxDimension}`);
     }
-    const options = { ...defaults, ...parseOptions(body) };
+    const options = { ...defaults, ...parseOptions(body), ...(maxMapSize ? { maxViewport: maxMapSize } : {}) };
     const withImages = Boolean(mapImages) && body.mapImages !== false;
     const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, withImages])).digest("hex") : null;
     if (cacheKey && cache.has(cacheKey)) { const hit = cache.get(cacheKey); cache.delete(cacheKey); cache.set(cacheKey, hit); return { ...hit, cached: true }; }
@@ -107,6 +109,13 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
       throw new RequestError(`cannot parse the XML: ${error.message}`);
     }
     const { map, document } = parsed;
+    let drawn;
+    try {
+      drawn = renderedViewport(map, options);
+    } catch (error) {
+      if (error instanceof RangeError) throw new RequestError(error.message);
+      throw error;
+    }
     const assets = assetResolver && options.defaultAssets !== false ? assetResolver : null;
     const draw = (resolver) => {
       try {
@@ -157,7 +166,11 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
       mapHeight: map.settings.height ?? 400,
       backend: rasterizer.name,
       clientLoads: map.source?.clientLoads ?? null,
-      warnings: [...(document.diagnostics ?? []).slice(0, 50), ...(images?.missing ? [{ code: "map-image-unavailable", severity: "info", count: images.missing }] : [])],
+      warnings: [
+        ...(document.diagnostics ?? []).slice(0, 50),
+        ...(images?.missing ? [{ code: "map-image-unavailable", severity: "info", count: images.missing }] : []),
+        ...(drawn.cropped ? [{ code: "map-cropped", severity: "info", x: drawn.x, y: drawn.y, width: drawn.width, height: drawn.height }] : []),
+      ],
       ...(images ? { mapImages: images } : {}),
       ...(body.svg === true ? { svg } : {}),
     };

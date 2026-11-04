@@ -159,7 +159,7 @@ components:
         mapHeight: { type: integer }
         backend: { type: string, example: resvg }
         clientLoads: { type: boolean, nullable: true, description: false when the game would fail to load the map. }
-        warnings: { type: array, description: The first 50 XML diagnostics., items: { type: object } }
+        warnings: { type: array, description: "The first 50 XML diagnostics, plus map-image-unavailable and map-cropped (with --max-map-size: x, y, width, height of the drawn part).", items: { type: object } }
         svg: { type: string, description: Only with svg true. }
         cached: { type: boolean, description: Present and true when answered from the result cache. }
         mapImages:

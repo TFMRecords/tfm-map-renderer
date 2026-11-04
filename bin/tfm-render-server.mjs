@@ -11,6 +11,8 @@
 //   --max-map-images N   most images fetched for one map (default 32)     --max-image-bytes N   largest image (default 4000000)
 //   --unofficial-images  also load absolute URLs on other hosts where the game can (ground i, tiled D)   (docs/api/http.md#map-images)
 //   --default-options JSON   renderer options every request gets unless it sets them, e.g. '{"spawnMarkers":"editor"}' (default $TFM_RENDER_DEFAULT_OPTIONS)
+//   --max-map-size WxH   soft limit: a larger map (or viewport) is drawn only up to W x H map pixels from its top-left corner, with a
+//                     "map-cropped" warning, instead of failing (default $TFM_MAX_MAP_SIZE, else none); one number is both
 import { existsSync } from "node:fs";
 import { createRenderService } from "../src/server/render-service.js";
 import { createRenderServer } from "../src/server/http.js";
@@ -21,7 +23,7 @@ import { createMapImageFetcher } from "../src/server/map-images.js";
 // Accepts `--key value`, `--key=value` and a lone number as the port. npm on Windows/PowerShell can swallow `--` and eat the flags, so `npm run server`
 // (no arguments) reads PORT / TFM_ASSETS_RELEASE, and a flag npm took for itself is recovered from npm_config_<flag>.
 const FLAGS = new Set(["no-flash-blur", "no-share-assets", "no-map-images", "map-images", "unofficial-images"]);
-const VALUE_FLAGS = ["release", "port", "host", "precedence", "concurrency", "timeout", "max-pixels", "max-map-images", "max-image-bytes", "default-options"];
+const VALUE_FLAGS = ["release", "port", "host", "precedence", "concurrency", "timeout", "max-pixels", "max-map-images", "max-image-bytes", "default-options", "max-map-size"];
 const args = {};
 for (let i = 2; i < process.argv.length; i++) {
   const a = process.argv[i];
@@ -61,10 +63,17 @@ if (defaultOptionsText) {
   try { defaultOptions = JSON.parse(defaultOptionsText); } catch (error) { fail(`--default-options: not JSON: ${error.message}`); }
   console.log(`default options: ${JSON.stringify(defaultOptions)}`);
 }
+const maxMapSizeText = args["max-map-size"] ?? process.env.TFM_MAX_MAP_SIZE;
+let maxMapSize = null;
+if (maxMapSizeText) {
+  const [w, h = w] = String(maxMapSizeText).toLowerCase().split("x");
+  maxMapSize = { width: positive(w), height: positive(h) };
+  console.log(`map size: drawn up to ${maxMapSize.width}x${maxMapSize.height}, larger maps are cropped`);
+}
 let service;
 try {
   service = createRenderService({
-    rasterizer, assetResolver, mapImages, defaultOptions,
+    rasterizer, assetResolver, mapImages, defaultOptions, maxMapSize,
     shareAssets: !args["no-share-assets"], concurrency: Number(args.concurrency ?? 2), timeoutMs: Number(args.timeout ?? 30000), maxPixels: Number(args["max-pixels"] ?? 4096 * 4096),
   });
 } catch (error) { fail(`--default-options: ${error.message}`); }

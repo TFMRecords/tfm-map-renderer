@@ -45,15 +45,19 @@ function cheese(resolver, mode) {
  * the spawn marker already draws a mouse there; the chair (the last checkpoint) is drawn by the map itself.
  * With `nails` (the default) the nail of each checkpoint is drawn again over its mouse, as Miceditor does.
  * @param {object} data `map.modules.parkour`
- * @param {{resolver?: object, mirrored?: boolean, map?: object, nails?: boolean}} context `map` gives the nails' rotation
+ * @param {{resolver?: object, mirrored?: boolean, map?: object, nails?: boolean, visible?: Function}} context `map` gives the nails' rotation;
+ *   `visible` leaves out the checkpoints outside the viewport (src/render/cull.js)
  */
-export function renderParkour(data, { resolver = null, mirrored = false, map = null, nails = true } = {}) {
+export function renderParkour(data, { resolver = null, mirrored = false, map = null, nails = true, visible = () => true } = {}) {
   const out = [];
   let stops = false;
   for (const c of data?.checkpoints ?? []) {
     if (c.kind === "chair" || !Number.isFinite(c.x) || !Number.isFinite(c.y)) continue;
     const size = finiteOr(c.size, 1);
     const radius = Math.max(2, Math.abs(size) * 16 - 1);
+    // The mouse, nail, cheese and labels all fit in this box (src/render/cull.js).
+    const reach = radius + 50;
+    if (!visible({ x: -reach, y: -reach, width: 2 * reach, height: 2 * reach }, { x: c.x, y: c.y })) continue;
     const parts = [];
     if (c.kind === "nail") {
       if (c.stop) stops = true;

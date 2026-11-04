@@ -42,6 +42,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--max-image-bytes N` | 4000000 | largest image |
 | `--unofficial-images` | | also absolute URLs on other hosts, where the game can load them |
 | `--default-options JSON` | `$TFM_RENDER_DEFAULT_OPTIONS`, else none | renderer options every request gets unless it sets them itself (top level or in `options`), e.g. `'{"spawnMarkers":"editor"}'`; a bad value stops the start |
+| `--max-map-size WxH` | `$TFM_MAX_MAP_SIZE`, else none | soft limit in map pixels: a larger map (or `viewport`) is drawn only up to W x H from its top-left corner, with a `map-cropped` warning, instead of failing; one number sets both. Keep W x H within `--max-pixels` |
 
 ## Endpoints
 
@@ -84,7 +85,9 @@ curl -s localhost:3000/render -H 'content-type: application/json' \
 ```
 
 `clientLoads` is `false` when the game would fail to load the map; `warnings` are the first 50 XML diagnostics. With map images on,
-`mapImages` is `{ requested, loaded, missing }` and a `map-image-unavailable` warning counts the images that could not be loaded. A repeated
+`mapImages` is `{ requested, loaded, missing }` and a `map-image-unavailable` warning counts the images that could not be loaded. With
+`--max-map-size`, a map cut down to that size gets a `map-cropped` warning with the drawn part (`x`, `y`, `width`, `height`, in map
+pixels); `mapWidth` and `mapHeight` stay the map's own size. A repeated
 identical request is answered from a cache of 64 results and has `"cached": true`.
 
 Errors are `{ "error": "message" }`:

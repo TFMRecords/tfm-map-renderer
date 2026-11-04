@@ -40,6 +40,7 @@ and the server's list in step.
 | `mirrorX` [false] | a mirrored room ([`limits-and-modes.md`](../xml/limits-and-modes.md#mirrored-rooms)) |
 | `borders` ["none"] | `"map"` or `"all"`: a map outline |
 | `limits` | the largest output in pixels (default 16384 x 16384; `{ maxWidth, maxHeight }`, or `false` for none); a `RangeError` beyond it |
+| `maxViewport` | `{ width, height }` in map units: a larger viewport (or map) is cut down to it from its top-left corner instead of failing |
 | `clientLimits` ["unrestricted"], `restricted` | what the game would cut or switch off (below) |
 | `backgroundColor` ["#6a7495"] | the room colour behind everything; `null`, `"none"` or `"transparent"` for none |
 | `minimalist` [false] | the game's minimalist mode ([`limits-and-modes.md`](../xml/limits-and-modes.md#minimalist-mode)) |
@@ -102,6 +103,11 @@ rendering. Not to be confused with `limits`, the output size.
 
 The game puts no limit on a map loaded from XML (saved maps 50000 and more pixels wide exist), so the renderer refuses an output
 (viewport times scale) above `limits` with a `RangeError`. A viewport or a smaller scale renders part of a huge map.
+
+`maxViewport` is the soft form: the viewport (the whole map when none is given) is cut down to `{ width, height }` from its
+top-left corner, so a huge map renders its first part instead of failing. `renderedViewport(map, options)` returns the part
+that would be drawn, with `cropped: true` when it was cut. Whatever lies outside the viewport is left out of the SVG
+([`../rendering.md`](../rendering.md#culling)), so a small part of a huge map is as cheap as a small map.
 
 ## Placeholders
 

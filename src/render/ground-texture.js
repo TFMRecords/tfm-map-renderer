@@ -76,7 +76,9 @@ function tileSymbolElement(ctx, n, opaque = false) {
   return id;
 }
 
+/** The `<use>` of tile `n` in a cell; "" for a cell outside the viewport (`ctx.cell`), null when the tile is missing. */
 function tileUse(ctx, n, col, row, opaque = false) {
+  if (ctx.cell && !ctx.cell(col, row)) return asset(ctx, tileSymbol(n))?.href ? "" : null;
   const id = tileSymbolElement(ctx, n, opaque);
   if (!id) return null;
   return `<use href="#${id}" x="${col * TILE_SIZE}" y="${row * TILE_SIZE}" width="${TILE_SIZE}" height="${TILE_SIZE}"/>`;
@@ -89,7 +91,7 @@ function fill(ctx, out, tiles, cols, rows, fromCol = 0, fromRow = 0) {
   for (let col = fromCol; col < cols; col++) {
     for (let row = fromRow; row < rows; row++) {
       const use = tileUse(ctx, pick(ctx, tiles), col, row, true);
-      if (!use) return false;
+      if (use === null) return false;
       out.push(use);
     }
   }
@@ -100,7 +102,7 @@ function fill(ctx, out, tiles, cols, rows, fromCol = 0, fromRow = 0) {
 function topRow(ctx, out, tiles, cols) {
   for (let col = 0; col < cols; col++) {
     const use = tileUse(ctx, pick(ctx, tiles), col, 0);
-    if (!use) return false;
+    if (use === null) return false;
     out.push(use);
   }
   return true;
@@ -115,7 +117,7 @@ function framedTopRow(ctx, out, edge, cols, rows) {
   for (let row = 1; row < rows; row++) parts.push([edge.corners.left, 0, row], [edge.corners.right, last, row]);
   for (const [n, col, row] of parts) {
     const use = tileUse(ctx, n, col, row);
-    if (!use) return false;
+    if (use === null) return false;
     out.push(use);
   }
   return true;
@@ -165,11 +167,22 @@ function pregenerated(ctx, recipe, width, height) {
 /**
  * Draw one textured ground.
  * @param {ReturnType<typeof createTextureContext>} ctx
- * @param {{type:number, width:number, height:number, dynamic:boolean, tint?:number, minimalistForced?:boolean, pregeneratedForced?:boolean}} ground
+ * @param {{type:number, width:number, height:number, dynamic:boolean, tint?:number, minimalistForced?:boolean, pregeneratedForced?:boolean, cell?:Function}} ground
+ *   `cell(col, row)` is false for a tile cell outside the viewport: it is left out (its random piece is still drawn, so the
+ *   other cells get the same pieces as in a full picture)
  * @returns {{base:string, strip:string}|null} `strip` is the galaxy's top strip, drawn behind its ground and the mice; null when
  *   the type has no texture recipe or an asset is missing.
  */
 export function renderTexturedGround(ctx, ground) {
+  ctx.cell = ground.cell ?? null;
+  try {
+    return texturedGround(ctx, ground);
+  } finally {
+    ctx.cell = null;
+  }
+}
+
+function texturedGround(ctx, ground) {
   const recipe = GROUND_TEXTURE_RECIPES[ground.type];
   const { width, height } = ground;
   const pregen = isPregenerated({ dynamic: ground.dynamic, width, height, forced: ground.pregeneratedForced });

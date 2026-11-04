@@ -112,6 +112,20 @@ the renderer's output, by eye and by measuring regions.
 | Placeholder ground colours (no bundles) are averages of a third-party editor's textures | not the game's art |
 | Sharing one SVG per asset (`shareAssets`, the server's default) moves anti-aliased edge pixels slightly | speed |
 
+## Culling
+
+Whatever lies wholly outside the viewport, plus a quarter of its size on each side, is left out of the SVG: grounds (and the
+texture tiles of a ground that is partly in view), decorations, holes and cheese, objects, `D`, `APS`, `ARPS` and `IP` images,
+backgrounds and module overlays. Each element's box is turned by its own rotation and flip and by the camera (`mirrorX`,
+`rotation`) before the test, so nothing that can show is dropped; the picture is the same as without culling. A culled ground's
+texture still takes its random pieces, so the grounds after it look the same as in a picture of the whole map.
+
+This keeps a huge map cheap to draw part by part, and it keeps resvg running: resvg aborts the whole process (a Rust panic, not
+an exception) on a layer (a clip, a filter, a mask, group opacity, or a nested `<svg>` such as every placed picture) that lies
+wholly outside a band of about twice the canvas around the picture. A map with a ground at `X="4000000"`, drawn with an
+800 x 400 viewport, did that before culling, and so did ordinary maps with a zoomed or rotated viewport. One case remains: a
+single texture tile or picture many times larger than the canvas (a 40 px tile at a scale of 40) can still panic.
+
 ## Renderer choices
 
 Where the game and the editor differ, or the game is random, the renderer has an option. Defaults: the game's picture, except

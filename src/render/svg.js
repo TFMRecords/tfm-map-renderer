@@ -1,12 +1,13 @@
 import { as3Int } from "../tfm/codecs.js";
 import { DEFAULT_MARKER_STYLES, colorToHex, groundStyle } from "./default-assets.js";
-import { GROUND_TEXTURE_RECIPES } from "./ground-textures.js";
+import { GROUND_TEXTURE_RECIPES, TILE_SIZE } from "./ground-textures.js";
 import { createTextureContext, renderTexturedGround, seededRandom, textureDefs } from "./ground-texture.js";
 import { applyClientLimits, resolveClientLimits } from "./client-limits.js";
 import { GHOST_COLOR_TRANSFORM, NAIL_TYPES, WORLD_NAIL_TYPES, gameCreatesObject, isDrawnGhost } from "./client-objects.js";
 import { flashBlurPrimitives } from "../util/flash-blur.js";
 import { attr, finiteOr, imageElement, resolveImage } from "./svg-util.js";
 import { renderModules, resolveModuleOptions } from "./modules/index.js";
+import { assetBox, createCuller } from "./cull.js";
 
 /** The colour the game paints behind everything, the default room colour (docs/rendering.md#draw-order). */
 export const DEFAULT_ROOM_COLOR = "#6a7495";
@@ -17,10 +18,19 @@ function normalizeViewport(map, options) {
   const mapWidth = finiteOr(map.settings.width, DEFAULT_WIDTH);
   const mapHeight = finiteOr(map.settings.height, DEFAULT_HEIGHT);
   const viewport = options.viewport ?? { x: 0, y: 0, width: mapWidth, height: mapHeight };
-  const width = finiteOr(viewport.width, mapWidth);
-  const height = finiteOr(viewport.height, mapHeight);
+  let width = finiteOr(viewport.width, mapWidth);
+  let height = finiteOr(viewport.height, mapHeight);
   if (width <= 0 || height <= 0) throw new RangeError("SVG viewport width/height must be positive");
+  // `maxViewport`: a soft size limit, the viewport is cut down from its top-left corner instead of failing.
+  const max = options.maxViewport;
+  const maxWidth = finiteOr(max?.width, Infinity);
+  const maxHeight = finiteOr(max?.height, Infinity);
+  if (maxWidth <= 0 || maxHeight <= 0) throw new RangeError("maxViewport width/height must be positive");
+  const cropped = width > maxWidth || height > maxHeight;
+  width = Math.min(width, maxWidth);
+  height = Math.min(height, maxHeight);
   return {
+    cropped,
     mapWidth,
     mapHeight,
     x: finiteOr(viewport.x, 0),
@@ -30,9 +40,11 @@ function normalizeViewport(map, options) {
   };
 }
 
-function renderMapImage(record, resolver, kind) {
+const ALL = () => true;
+
+function renderMapImage(record, resolver, kind, visible = ALL) {
   const asset = resolveImage(resolver, record.url, kind, { record });
-  if (!asset) return "";
+  if (!asset || !visible({ x: record.x, y: record.y, width: asset.width, height: asset.height })) return "";
   return imageElement(asset, record.x, record.y, {
     width: asset.width,
     height: asset.height,
@@ -49,10 +61,11 @@ function assetDimensions(asset) {
   };
 }
 
-function renderTiledBitmap(record, resolver, fallbackWidth, fallbackHeight, index) {
+function renderTiledBitmap(record, resolver, fallbackWidth, fallbackHeight, index, visible = ALL) {
   const targetWidth = record.width > 0 ? record.width : fallbackWidth;
   const targetHeight = record.height > 0 ? record.height : fallbackHeight;
   if (!(targetWidth > 0) || !(targetHeight > 0)) return "";
+  if (!visible({ x: 0, y: 0, width: targetWidth, height: targetHeight })) return "";
 
   const asset = resolveImage(resolver, record.value, "tiled", {
     record,
@@ -82,7 +95,7 @@ function renderTiledBitmap(record, resolver, fallbackWidth, fallbackHeight, inde
   return out.join("");
 }
 
-function renderDImages(records, resolver, kind, fallbackWidth, fallbackHeight, skipImages = false, restricted = false, tiled = false, mirrored = false) {
+function renderDImages(records, resolver, kind, fallbackWidth, fallbackHeight, skipImages = false, restricted = false, tiled = false, mirrored = false, visible = ALL) {
   const out = [];
   for (let index = 0; index < (records ?? []).length; index++) {
     const record = records[index];
@@ -90,19 +103,23 @@ function renderDImages(records, resolver, kind, fallbackWidth, fallbackHeight, s
       // Off by default: a tiled `D` background loads an external image over http, which the game was meant to allow for admins only
       // (some clients, the AIR runtime, still load it for module maps). The map keeps the record; `renderTiledBackgrounds: true` draws it anyway.
       if (restricted || !tiled) continue;
-      out.push(renderTiledBitmap(record, resolver, fallbackWidth, fallbackHeight, index));
+      out.push(renderTiledBitmap(record, resolver, fallbackWidth, fallbackHeight, index, visible));
       continue;
     }
     if (skipImages || record.kind !== "image" || !record.url) continue;
     const asset = resolveImage(resolver, record.url, "standard", { record, layer: kind });
     if (!asset) continue;
-    out.push(imageElement(asset, record.x, record.y));
+    const shown = (x, y) => visible({ x, y, width: asset.width, height: asset.height });
+    if (shown(record.x, record.y)) out.push(imageElement(asset, record.x, record.y));
     const count = restricted ? 0 : Math.max(0, as3Int(record.repeatCount));
     const dx = Number(record.repeatArg);
     if (count > 0 && Number.isFinite(dx)) {
       // In a mirrored map the game mirrors only the first image (x := mapWidth - x, bitmap flipped); the clones are then moved by +dx from THAT x, so they walk
       // to the right on screen (docs/xml/images.md#repeats). Inside the mirrored picture (x -> mapWidth - x) that is a walk to the left (verified with images-1.xml in a mirrored room).
-      for (let i = 1; i <= count; i++) out.push(imageElement(asset, record.x + (mirrored ? -dx : dx) * i, record.y));
+      for (let i = 1; i <= count; i++) {
+        const x = record.x + (mirrored ? -dx : dx) * i;
+        if (shown(x, record.y)) out.push(imageElement(asset, x, record.y));
+      }
     }
   }
   return out.join("");
@@ -127,6 +144,15 @@ function renderGroundImage(ground, geometry, resolver, mirrored = false) {
   return imageElement(asset, ox + finiteOr(parts.x, 0), oy + finiteOr(parts.y, 0));
 }
 
+/** Where `renderGroundImage` puts the image, in the ground's own coordinates. */
+function groundImageBox(ground, geometry, resolver, mirrored = false) {
+  const parts = ground.imageParts;
+  const asset = resolveImage(resolver, parts.url, "bare-name", { ground, record: parts });
+  const ox = geometry.circle ? 0 : -(mirrored ? Math.ceil(geometry.width / 2) : Math.floor(geometry.width / 2));
+  const oy = geometry.circle ? 0 : -Math.trunc(geometry.height / 2);
+  return { x: ox + finiteOr(parts.x, 0), y: oy + finiteOr(parts.y, 0), width: asset?.width, height: asset?.height };
+}
+
 /**
  * `APS` images: the game adds each one to the top layer when the map is built and draws the WHOLE image at (imageX, imageY); the 8-field
  * record's rectangle is not a clip (verified in the game with images-2.xml: the images show whole) but the area that, at run time, makes the image disappear.
@@ -134,12 +160,12 @@ function renderGroundImage(ground, geometry, resolver, mirrored = false) {
  * point is inside its rectangle; an `IP` image is shown for 5 s by a server packet. They are drawn only on request (`renderAppearingImages`, `renderIpImages`),
  * as the state "shown", on top of the bottom layer (that is where the game adds them). docs/xml/images.md#images-in-the-settings
  */
-function renderApsImages(records, resolver, layer = "aps") {
+function renderApsImages(records, resolver, layer = "aps", visible = ALL) {
   const out = [];
   for (const record of records ?? []) {
     if (!record?.url) continue;
     const asset = resolveImage(resolver, record.url, "bare-name", { record, layer });
-    if (asset) out.push(imageElement(asset, record.imagePosition.x, record.imagePosition.y));
+    if (asset && visible({ ...record.imagePosition, width: asset.width, height: asset.height })) out.push(imageElement(asset, record.imagePosition.x, record.imagePosition.y));
   }
   return out.join("");
 }
@@ -163,7 +189,7 @@ function minimalistStyle(ground, own) {
  */
 export const RANDOM_BACKGROUND_IDS = Object.freeze([0, 1, 2, 3, 0, 7]);
 
-function renderMapBackground(map, resolver, options, mapWidth, mapHeight) {
+function renderMapBackground(map, resolver, options, mapWidth, mapHeight, visible = ALL) {
   let id = map.settings.backgroundImageId;
   if (id == null || id === -1 || options.minimalist === true) return "";
   const width = Math.max(mapWidth, 800);
@@ -174,10 +200,12 @@ function renderMapBackground(map, resolver, options, mapWidth, mapHeight) {
   if (id === -2 && options.compositeRandomBackground !== false) {
     const ids = [...new Set(RANDOM_BACKGROUND_IDS)];
     const strip = width / ids.length;
-    return ids.map((n, i) => backgroundPicture(resolver, n, width, height, `map-background-clip-${i}`, i * strip, strip)).join("");
+    return ids.map((n, i) => (visible({ x: i * strip, y: 0, width: strip, height })
+      ? backgroundPicture(resolver, n, width, height, `map-background-clip-${i}`, i * strip, strip)
+      : "")).join("");
   }
   if (id === -2) id = RANDOM_BACKGROUND_IDS[Math.abs(Math.trunc(options.randomBackgroundIndex ?? 0)) % RANDOM_BACKGROUND_IDS.length];
-  return backgroundPicture(resolver, id, width, height, "map-background-clip", 0, width);
+  return visible({ x: 0, y: 0, width, height }) ? backgroundPicture(resolver, id, width, height, "map-background-clip", 0, width) : "";
 }
 
 /** One `$F_<id>` clip stretched to width x height (the whole map), clipped to the vertical strip [clipX, clipX + clipWidth). */
@@ -233,7 +261,7 @@ function renderJoints(map) {
   return { back: back.join(""), front: front.join("") };
 }
 
-function renderGrounds(map, resolver, defaults, minimalist = false, textures = null, pregeneratedForced = false, restricted = false, mirrored = false) {
+function renderGrounds(map, resolver, defaults, minimalist = false, textures = null, pregeneratedForced = false, restricted = false, mirrored = false, visible = ALL) {
   // The game's layers, bottom to top: ... grounds, mice, objects, top (docs/rendering.md#draw-order). Grounds with the foreground
   // flag (the `N` attribute, and types 9, 15 and 21 always) go to the top layer, above the mice. The galaxy strip is added to the
   // grounds layer, so it ends up behind its own foreground ground and shows through that ground's transparent top.
@@ -253,12 +281,23 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
     const transform = `translate(${g.x} ${g.y})${g.rotation ? ` rotate(${g.rotation})` : ""}${mirrored ? " scale(-1 1)" : ""}`;
     const ox = g.circle ? 0 : -(mirrored ? Math.ceil(g.width / 2) : Math.floor(g.width / 2));
     const oy = g.circle ? 0 : -Math.trunc(g.height / 2);
+    const image = ground.invisible || restricted ? "" : renderGroundImage(ground, g, resolver, mirrored);
+    // A ground wholly outside the viewport is left out, and so are the texture tiles outside it (they never reach resvg: cull.js).
+    const place = { x: g.x, y: g.y, rotation: g.rotation, flip: mirrored };
+    const r = Math.abs(g.width);
+    const shapeBox = g.circle ? { x: -r, y: -r, width: 2 * r, height: 2 * r }
+      : { x: Math.min(ox, -g.width / 2), y: Math.min(oy, -g.height / 2), width: g.width + 1, height: g.height + 1 };
+    const shown = visible(shapeBox, place) || Boolean(image && visible(groundImageBox(ground, g, resolver, mirrored), place));
+    // The texture of a culled ground is still built, with no cell drawn: the grounds share one random sequence, so the next
+    // grounds get the same pieces as in a picture of the whole map.
     const textured = textures && !flat && !replaced && !ground.invisible && !g.circle
       ? renderTexturedGround(textures, {
         type: ground.type, width: g.width, height: g.height, tint: ground.derived?.tint ?? ground.tint ?? 0x808080,
         dynamic: Boolean(ground.derived?.physics?.dynamic ?? ground.physics?.dynamic), pregeneratedForced,
+        cell: shown ? (col, row) => visible({ x: ox + col * TILE_SIZE, y: oy + row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }, place) : () => false,
       })
       : null;
+    if (!shown) continue;
     let shape = "";
     if (textured) {
       shape = `<g${attr("transform", `translate(${ox} ${oy})`)}>${textured.base}</g>`;
@@ -274,7 +313,6 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
             + (style.top ? `<rect${attr("x", -g.width / 2)}${attr("y", -g.height / 2)}${attr("width", g.width)}${attr("height", Math.min(style.top.height, g.height))}${attr("fill", style.top.fill)}${opacity}/>` : "");
       }
     }
-    const image = ground.invisible || restricted ? "" : renderGroundImage(ground, g, resolver, mirrored);
     if (!shape && !image) continue;
     const element = `<g${attr("data-type", ground.type)}${attr("transform", transform)}>${shape}${image}</g>`;
     (ground.derived?.foreground ?? ground.foreground ? foreground : base).push(element);
@@ -352,7 +390,10 @@ function keepUpright(element, x) {
  * placeholders; `ground` (the grounds layer, over the grounds, under the mice) takes the foreground holes; `objects` (the
  * objects layer, over the mice) takes the foreground cheese.
  */
-function markerParts(map, resolver, { cheeseSuffix = "", spawnMarkers = "circles", mirrored = false } = {}) {
+/** The box culling holes, cheese and the placeholder marks: larger than any of their clips. */
+const MARKER_BOX = Object.freeze({ x: -100, y: -100, width: 200, height: 200 });
+
+function markerParts(map, resolver, { cheeseSuffix = "", spawnMarkers = "circles", mirrored = false, visible = ALL } = {}) {
   const layers = { back: [], ground: [], objects: [] };
   // `spawnMarkers: "editor"`: the in-game editor draws `AnimStatique` at a `DS` and `AnimStatiqueC` at a `DC`, and has no branch for
   // `DC2`: the loop then reuses the display object of the PREVIOUS node and only sets its x and y again, so a `DC2` right after a `DS` or `DC`
@@ -373,12 +414,17 @@ function markerParts(map, resolver, { cheeseSuffix = "", spawnMarkers = "circles
       const placed = editorClips.get(index);
       if (placed) {
         const asset = resolveImage(resolver, placed.clip, "sprite", { key: placed.clip });
-        if (asset) parts.back = `<g${attr("transform", `translate(${finiteOr(placed.x, 0)} ${finiteOr(placed.y, 0)})`)}>${imageElement(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0))}</g>`;
+        if (asset && visible(assetBox(asset), { x: finiteOr(placed.x, 0), y: finiteOr(placed.y, 0) })) parts.back = `<g${attr("transform", `translate(${finiteOr(placed.x, 0)} ${finiteOr(placed.y, 0)})`)}>${imageElement(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0))}</g>`;
       }
       if (d.role === "mouse-spawn" || d.role === "shaman-spawn" || d.role === "dual-shaman-spawn") {
         for (const layer of Object.keys(layers)) layers[layer].push(parts[layer]);
         continue;
       }
+    }
+    // Holes, cheese and their placeholders are small: a fixed box around the point decides (the clip is not looked up for a culled one).
+    if (!visible(MARKER_BOX, { x: finiteOr(d.x, 0), y: finiteOr(d.y, 0) })) {
+      for (const layer of Object.keys(layers)) layers[layer].push(parts[layer]);
+      continue;
     }
     let real = (d.role === "hole" || d.role === "cheese") ? holeCheeseElement(map, d, resolver, cheeseSuffix) : "";
     if (real && mirrored) real = keepUpright(real, finiteOr(d.x, 0));
@@ -419,7 +465,7 @@ const MINIMALIST_DECORATIONS = new Set([89, 90, 131]);
  * (under the grounds, in map order together with the holes and cheese), `foreground` ones in the top layer (over everything). An explicit `resolveDecorationAsset` callback replaces the default symbol lookup (and then draws every layer
  * in one go, unmirrored, in the bottom layer).
  */
-function decorationParts(map, resolver, resolveDecorationAsset, { foreground = false, random = Math.random, minimalist = false, randomFlip = false } = {}) {
+function decorationParts(map, resolver, resolveDecorationAsset, { foreground = false, random = Math.random, minimalist = false, randomFlip = false, visible = ALL } = {}) {
   const custom = typeof resolveDecorationAsset === "function";
   return (map.decorations ?? []).map((decoration, index) => {
     if (custom && foreground) return "";
@@ -432,8 +478,9 @@ function decorationParts(map, resolver, resolveDecorationAsset, { foreground = f
     if (!asset) return "";
     const x = finiteOr(decoration.x, 0);
     const y = finiteOr(decoration.y, 0);
-    if (custom) return imageElement(asset, x, y);
+    if (custom) return visible({ x, y, width: asset.width, height: asset.height }) ? imageElement(asset, x, y) : "";
     const flip = decoration.inversionCode === 1 || (decoration.inversionCode === 2 && randomFlip && random() < 0.5);
+    if (!visible(assetBox(asset), { x, y, flip })) return "";
     const element = imageElement(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0));
     return `<g${attr("transform", `translate(${x} ${y})${flip ? " scale(-1 1)" : ""}`)}>${element}</g>`;
   });
@@ -467,7 +514,7 @@ function objectPlaceholder(object) {
  *   creates, nails only when they join enough bodies (docs/xml/objects.md#nails), the arrow at its first (invisible) frame, and `C="28"` as a
  *   random one of the four balloons 28 to 31.
  */
-function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = true, mode = "editor", random = Math.random, mirrored = false, clientNails = false } = {}) {
+function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = true, mode = "editor", random = Math.random, mirrored = false, clientNails = false, visible = ALL } = {}) {
   const custom = typeof resolveObjectAsset === "function";
   const game = mode === "game";
   let ghostFilter = false;
@@ -534,7 +581,7 @@ function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = 
     if (custom) {
       const source = resolveObjectAsset(object, index);
       const asset = source ? resolveImage(resolver, source, "sprite", { object, index }) : null;
-      return asset ? imageElement(asset, object.x, object.y) : "";
+      return asset && visible({ x: object.x, y: object.y, width: asset.width, height: asset.height }) ? imageElement(asset, object.x, object.y) : "";
     }
     if (object.defilanteMarker != null) return "";
     if (game && NAIL_TYPES.has(object.type)) {
@@ -543,10 +590,11 @@ function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = 
     let type = object.type;
     if (game && type === 28) type = 28 + Math.floor(random() * 4);
     const asset = assetOf(object, index, type);
-    if (!asset) return placeholders && !game && resolver?.resolve ? objectPlaceholder(object) : "";
     const x = finiteOr(object.x, 0);
     const y = finiteOr(object.y, 0);
+    if (!asset) return placeholders && !game && resolver?.resolve && visible({ x: -15, y: -15, width: 30, height: 30 }, { x, y }) ? objectPlaceholder(object) : "";
     const angle = finiteOr(object.rotation, 0);
+    if (!visible(assetBox(asset), { x, y, rotation: angle, flip: mirrored })) return "";
     const element = imageElement(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0));
     const ghost = isDrawnGhost(object);
     if (ghost) ghostFilter = true;
@@ -559,6 +607,17 @@ function renderObjectAssets(map, resolver, resolveObjectAsset, { placeholders = 
     ? `<defs><filter id="object-ghost" color-interpolation-filters="sRGB" x="-10%" y="-10%" width="120%" height="120%"><feColorMatrix type="matrix" values="${[0, 1, 2, 3].map((i) => { const r = [0, 0, 0, 0, add[i] / 255]; r[i] = mul[i]; return r.map((v) => Math.round(v * 1e5) / 1e5).join(" "); }).join("  ")}"/></filter></defs>`
     : "";
   return defs + rows.join("");
+}
+
+/**
+ * The part of the map `renderTfmSvg` draws with these options, in map units: `viewport` (default the whole map, after
+ * `clientLimits`) cut down to `maxViewport`; `cropped` says whether it was.
+ * @returns {{x:number, y:number, width:number, height:number, mapWidth:number, mapHeight:number, cropped:boolean}}
+ */
+export function renderedViewport(map, options = {}) {
+  if (!map?.settings) throw new TypeError("renderedViewport expects a parsed TfmMap");
+  const clientLimits = resolveClientLimits(options.clientLimits ?? (options.restricted === true ? "restricted" : "unrestricted"));
+  return normalizeViewport(applyClientLimits(map, clientLimits), options);
 }
 
 /**
@@ -602,6 +661,8 @@ function assertWithinLimits(width, height, limits) {
  * tiled `D` and repeat clones off; `"module"`, a `#Module` room: no caps, ARPS off) or an object of custom
  * values (`{ preset: "restricted", maxGrounds: 200 }`). `restricted: true` is an alias of `clientLimits: "restricted"`. The parsed
  * map is never modified. (`limits` is something else: the maximum output size in pixels.)
+ * `maxViewport: { width, height }` is a soft limit in map units: a larger viewport (or map, without one) is cut down to it from its
+ * top-left corner instead of failing (`renderedViewport` tells whether it was). Whatever lies wholly outside the viewport is left out (cull.js).
  * With `renderHideOffscreenFrame: true`, `Ca` maps (`hideOffscreen`) get the client's frame in the room colour around the 800x600 play area (opt-in: `renderHideOffscreenFrame: true`; off by default); with `renderSoulmateHeart: true` (off by default) `A` maps (`soulmate`) get the `$P5` heart at (12, 30) when the resolver has it.
  * Blur: hole glows use Flash's exact box blurs (three passes of width 5); `flashBlur: false` uses a Gaussian instead. The bundle resolver does the same for the clips' own filters (`loadRelease(dir, { flashBlur })`).
  * `renderAppearingImages: true` draws the `ARPS` images and `renderIpImages: true` the `IP` images (server-triggered pictures of a few event maps; `renderPortalImages` is the old name) as if shown (both off by default: the game shows an `ARPS` image only while the player
@@ -632,6 +693,7 @@ export function renderTfmSvg(map, options = {}) {
   assertWithinLimits(outputWidth, outputHeight, options.limits);
   const centerX = viewport.x + viewport.width / 2;
   const centerY = viewport.y + viewport.height / 2;
+  const visible = createCuller(viewport, { mirrorX: options.mirrorX === true, rotation });
 
   const transforms = [];
   if (options.mirrorX) transforms.push(`translate(${viewport.mapWidth} 0) scale(-1 1)`);
@@ -642,35 +704,35 @@ export function renderTfmSvg(map, options = {}) {
   const textures = options.textures === false || !resolver ? null : createTextureContext(resolver, finiteOr(options.textureSeed, 1));
   const restricted = clientLimits.restricted;
   const joints = options.renderJoints === false ? { back: "", front: "" } : renderJoints(map);
-  const grounds = renderGrounds(map, resolver, defaults, options.minimalist === true, textures, options.pregeneratedBitmaps === true, restricted, options.mirrorX === true);
+  const grounds = renderGrounds(map, resolver, defaults, options.minimalist === true, textures, options.pregeneratedBitmaps === true, restricted, options.mirrorX === true, visible);
   const cheeseSuffix = typeof options.cheeseSuffix === "string" ? options.cheeseSuffix : "";
-  const markers = defaults ? markerParts(map, resolver, { cheeseSuffix, spawnMarkers: options.spawnMarkers, mirrored: options.mirrorX === true }) : { back: [], ground: [], objects: [] };
+  const markers = defaults ? markerParts(map, resolver, { cheeseSuffix, spawnMarkers: options.spawnMarkers, mirrored: options.mirrorX === true, visible }) : { back: [], ground: [], objects: [] };
   const backMarkers = markers.back;
-  const backDecorations = decorationParts(map, resolver, options.resolveDecorationAsset, { random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true });
+  const backDecorations = decorationParts(map, resolver, options.resolveDecorationAsset, { random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true, visible });
   const back = backDecorations.map((part, i) => part + (backMarkers[i] ?? "")).join("");
   // Bottom to top, in the game's layer order (docs/rendering.md#draw-order).
   const body = [
     textureDefs(textures ?? { defs: new Map() }),
     defaults ? holeGlowDefs(map, options.flashBlur !== false) : "",
-    renderMapBackground(map, resolver, options, viewport.mapWidth, viewport.mapHeight),
-    renderDImages(map.settings.images?.background, resolver, "background", viewport.mapWidth, viewport.mapHeight, options.minimalist === true, restricted, options.renderTiledBackgrounds === true, options.mirrorX === true),
+    renderMapBackground(map, resolver, options, viewport.mapWidth, viewport.mapHeight, visible),
+    renderDImages(map.settings.images?.background, resolver, "background", viewport.mapWidth, viewport.mapHeight, options.minimalist === true, restricted, options.renderTiledBackgrounds === true, options.mirrorX === true, visible),
     back,
-    options.renderAppearingImages === true && clientLimits.arps ? renderApsImages(map.settings.images?.appearing, resolver, "arps") : "",
-    (options.renderIpImages === true || options.renderPortalImages === true) && !restricted ? renderMapImageRecords(map.settings.images?.ip, resolver) : "",
+    options.renderAppearingImages === true && clientLimits.arps ? renderApsImages(map.settings.images?.appearing, resolver, "arps", visible) : "",
+    (options.renderIpImages === true || options.renderPortalImages === true) && !restricted ? renderMapImageRecords(map.settings.images?.ip, resolver, visible) : "",
     joints.back,
     grounds.base,
     markers.ground.join(""),
-    renderObjectAssets(map, resolver, options.resolveObjectAsset, { placeholders: options.objectPlaceholders !== false, mode: options.objectMode === "game" ? "game" : "editor", random: decorationRandom, mirrored: options.mirrorX === true, clientNails: options.nailVisibility === "client" }),
+    renderObjectAssets(map, resolver, options.resolveObjectAsset, { placeholders: options.objectPlaceholders !== false, mode: options.objectMode === "game" ? "game" : "editor", random: decorationRandom, mirrored: options.mirrorX === true, clientNails: options.nailVisibility === "client", visible }),
     markers.objects.join(""),
     joints.front,
-    renderDImages(map.settings.images?.foreground, resolver, "foreground", viewport.mapWidth, viewport.mapHeight, false, restricted, options.renderTiledBackgrounds === true, options.mirrorX === true),
+    renderDImages(map.settings.images?.foreground, resolver, "foreground", viewport.mapWidth, viewport.mapHeight, false, restricted, options.renderTiledBackgrounds === true, options.mirrorX === true, visible),
     grounds.foreground,
-    decorationParts(map, resolver, options.resolveDecorationAsset, { foreground: true, random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true }).join(""),
-    restricted ? "" : renderApsImages(map.settings.images?.disappearing, resolver),
+    decorationParts(map, resolver, options.resolveDecorationAsset, { foreground: true, random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true, visible }).join(""),
+    restricted ? "" : renderApsImages(map.settings.images?.disappearing, resolver, "aps", visible),
     // Lua module overlays (parkour checkpoints, ...): annotations over the map, not something the game draws.
-    renderModules(map, modules, { resolver, mirrored: options.mirrorX === true, map, nails: options.parkourNails !== false }),
+    renderModules(map, modules, { resolver, mirrored: options.mirrorX === true, map, nails: options.parkourNails !== false, visible }),
     options.debugMarkers ? renderDebugMarkers(map) : "",
-    options.renderSoulmateHeart === true && map.settings.soulmate && defaults ? renderSoulmateClip(resolver) : "",
+    options.renderSoulmateHeart === true && map.settings.soulmate && defaults ? renderSoulmateClip(resolver, visible) : "",
     options.borders === "map" || options.borders === "all"
       ? `<rect${attr("x", 0)}${attr("y", 0)}${attr("width", viewport.mapWidth)}${attr("height", viewport.mapHeight)}${attr("fill", "none")}${attr("stroke", "#000")}/>`
       : "",
@@ -689,12 +751,12 @@ export function renderTfmSvg(map, options = {}) {
 }
 
 /** A map with `A` (soulmate) gets the `$P5` clip, frame 1, at (12, 30) in the top layer. Nothing without the clip. */
-function renderSoulmateClip(resolver) {
+function renderSoulmateClip(resolver, visible = ALL) {
   const asset = resolveImage(resolver, "$P5", "sprite", { key: "$P5" });
-  if (!asset) return "";
+  if (!asset || !visible(assetBox(asset, 12, 30))) return "";
   return `<g${attr("transform", "translate(12 30)")}>${imageElement(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0))}</g>`;
 }
 
-function renderMapImageRecords(records, resolver) {
-  return (records ?? []).map((record) => renderMapImage(record, resolver, "standard")).join("");
+function renderMapImageRecords(records, resolver, visible = ALL) {
+  return (records ?? []).map((record) => renderMapImage(record, resolver, "standard", visible)).join("");
 }

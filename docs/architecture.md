@@ -26,6 +26,7 @@ needs vector pictures anyway) and resvg the rasteriser; there is no browser or c
 | `src/render/` | `renderTfmSvg` and its parts: ground textures, client limits, objects, shared assets | `src/tfm/`, a resolver |
 | `src/assets/` | release build and loading, bundles, resolvers, FFDec adapter, image URL rules | `src/swf/`, Node |
 | `src/swf/` | SWF reading: tags, display lists, the loader unwrap (a small AVM2 interpreter that runs the loader's own script) | nothing |
+| `src/raster/` | the PNG compositor, in progress: rasters of the game's pictures at their drawn size (`pictures.js`, tiled and cached; the rasteriser is passed in) | `src/render/` |
 | `src/server/` | the PNG render service and its HTTP front end | everything above, `@resvg/resvg-js` |
 | `src/util/` | Flash blur, PNG codec, screenshot comparison, archives | nothing |
 

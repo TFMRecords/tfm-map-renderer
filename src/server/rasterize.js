@@ -31,6 +31,25 @@ export async function createResvgRasterizer({ processes = 2 } = {}) {
   return pool;
 }
 
+/**
+ * The `rasterize` function of a picture cache (src/raster/pictures.js) on resvg, in this process: SVG text in, premultiplied
+ * RGBA pixels out. Used where the PNG compositor runs (a child of the pool), since a resvg panic ends the process.
+ * @returns {Promise<(svg: string) => {pixels: Uint8Array, width: number, height: number}>}
+ */
+export async function loadResvgPixels() {
+  let mod;
+  try {
+    mod = await import("@resvg/resvg-js");
+  } catch (error) {
+    throw new Error(MISSING, { cause: error });
+  }
+  const { Resvg } = mod.default ?? mod;
+  return (svg) => {
+    const rendered = new Resvg(svg, { font: { loadSystemFonts: false } }).render();
+    return { pixels: rendered.pixels, width: rendered.width, height: rendered.height };
+  };
+}
+
 async function inProcessRasterizer() {
   let mod;
   try {

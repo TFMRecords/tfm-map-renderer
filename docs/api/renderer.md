@@ -38,6 +38,7 @@ and the server's list in step.
 | `assetResolver` | where pictures come from (`loadRelease(dir).resolver`); none: placeholders |
 | `defaultAssets` [true] | `false` draws only what the resolver supplies (no placeholders, no room colour) |
 | `viewport` {x, y, width, height} | the part of the map to draw (default: the whole map) |
+| `fitContent` [false] | without `viewport`: the viewport is the box of everything drawn on the map (grounds, decorations, objects, joints, holes, spawns, the map's images, overlays), whatever the map's size, so it can start left of or above (0, 0); the background (`F`, tiled `D`, the room colour) does not count. With `rotation` it fits the turned content. A map with nothing drawn keeps its own size |
 | `scale` [1] | output pixels per map unit |
 | `rotation` [0] | camera rotation in degrees, around the viewport centre |
 | `mirrorX` [false] | a mirrored room ([`limits-and-modes.md`](../xml/limits-and-modes.md#mirrored-rooms)) |

@@ -358,6 +358,8 @@ Decorations with `P` = `0,2` (flip with probability 1/2 in the client) are drawn
 tiled `D` and repeat clones off; `"module"`, a `#Module` room: no caps, ARPS off) or an object of custom
 values (`{ preset: "restricted", maxGrounds: 200 }`). `restricted: true` is an alias of `clientLimits: "restricted"`. The parsed
 map is never modified. (`limits` is something else: the maximum output size in pixels.)
+`fitContent: true` (without `viewport`) draws everything on the map and nothing more: the viewport is the box of the content
+(`contentViewport`), whatever the map's size, and can start left of or above (0, 0).
 `maxViewport: { width, height }` is a soft limit in map units: a larger viewport (or map, without one) is cut down to it from its
 top-left corner instead of failing (`renderedViewport` tells whether it was). Whatever lies wholly outside the viewport is left out (cull.js).
 With `renderHideOffscreenFrame: true`, `Ca` maps (`hideOffscreen`) get the client's frame in the room colour around the 800x600 play area (opt-in: `renderHideOffscreenFrame: true`; off by default); with `renderSoulmateHeart: true` (off by default) `A` maps (`soulmate`) get the `$P5` heart at (12, 30) when the resolver has it.
@@ -387,7 +389,7 @@ options. `sceneToSvg` turns it into the SVG text; another backend can draw it di
 `function renderedViewport(map, options = {})`
 
 The part of the map `renderTfmSvg` draws with these options, in map units: `viewport` (default the whole map, after
-`clientLimits`) cut down to `maxViewport`; `cropped` says whether it was.
+`clientLimits`, or its content with `fitContent`) cut down to `maxViewport`; `cropped` says whether it was.
 @returns {{x:number, y:number, width:number, height:number, mapWidth:number, mapHeight:number, cropped:boolean}}
 
 #### `DEFAULT_LIMITS`

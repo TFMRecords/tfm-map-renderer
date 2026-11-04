@@ -17,6 +17,7 @@ const REQUEST_FIELDS = [
 /** Each renderer option the server accepts: [group, default shown, help] (docs/api/renderer.md#options). A test keeps it whole. */
 export const OPTION_HELP = Object.freeze({
   viewport: ["View", "whole map", "the part of the map to draw, in map units"],
+  fitContent: ["View", "false", "without viewport: draw everything on the map and nothing more, whatever the map's size (x, y can be negative)"],
   scale: ["View", "1", "output pixels per map unit"],
   rotation: ["View", "0", "camera rotation in degrees, around the viewport centre"],
   mirrorX: ["View", "false", "a mirrored room"],

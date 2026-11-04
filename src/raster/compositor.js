@@ -4,16 +4,11 @@
 //
 // Pixels are premultiplied RGBA floats from 0 to 1 while drawing; each finished strip is handed over as straight-alpha RGBA bytes.
 import { boxBlur, dashCoverage, dashSegments, fillMask, parsePath, strokeMask } from "./shapes.js";
+import { multiplyMatrix, transformMatrix } from "../render/scene-bounds.js";
 
-// --- Matrices: [a, b, c, d, e, f] maps (x, y) to (a x + c y + e, b x + d y + f), as in SVG.
+// --- Matrices: [a, b, c, d, e, f] maps (x, y) to (a x + c y + e, b x + d y + f), as in SVG (src/render/scene-bounds.js).
 
-function multiply(m, n) {
-  return [
-    m[0] * n[0] + m[2] * n[1], m[1] * n[0] + m[3] * n[1],
-    m[0] * n[2] + m[2] * n[3], m[1] * n[2] + m[3] * n[3],
-    m[0] * n[4] + m[2] * n[5] + m[4], m[1] * n[4] + m[3] * n[5] + m[5],
-  ];
-}
+const multiply = multiplyMatrix;
 
 function invert(m) {
   const det = m[0] * m[3] - m[1] * m[2];
@@ -23,23 +18,7 @@ function invert(m) {
 
 const translate = (x, y) => [1, 0, 0, 1, x, y];
 
-/** The matrix of a scene transform list (scene.js `transform`). */
-export function transformMatrix(ops) {
-  let m = [1, 0, 0, 1, 0, 0];
-  for (const [name, ...a] of ops ?? []) {
-    let n;
-    if (name === "translate") n = translate(a[0], a[1] ?? 0);
-    else if (name === "scale") n = [a[0], 0, 0, a[1] ?? a[0], 0, 0];
-    else if (name === "rotate") {
-      const r = (a[0] * Math.PI) / 180;
-      n = [Math.cos(r), Math.sin(r), -Math.sin(r), Math.cos(r), 0, 0];
-      if (a.length >= 3) n = multiply(multiply(translate(a[1], a[2]), n), translate(-a[1], -a[2]));
-    } else if (name === "matrix") n = a;
-    else throw new TypeError(`unknown transform "${name}"`);
-    m = multiply(m, n);
-  }
-  return m;
-}
+export { transformMatrix };
 
 const apply = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
 

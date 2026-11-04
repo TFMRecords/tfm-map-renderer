@@ -369,6 +369,7 @@ Joints with a style (`c`) are drawn as the client draws them (`renderJoints: fal
 `modules` turns the overlays of Lua modules on or off: `{ parkour: "auto" }` (default; drawn when the parser detected a parkour
 map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
 `parkourNails: false` leaves out the checkpoint nail the parkour overlay draws over each checkpoint mouse (on by default, as in Miceditor).
+`parkourStyle` sets the tint of `stop` checkpoints and the height and colours of the checkpoint number and size labels (`resolveParkourStyle` in modules/parkour.js).
 `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
 type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
 pictures are not drawn.  The client ignores the option for map mode 22 and for

@@ -5,6 +5,7 @@ import { parseTfmDocument } from "../tfm/parse-map.js";
 import { renderTfmSvg, renderedViewport } from "../render/svg.js";
 import { shareSvgAssets } from "../render/share-assets.js";
 import { RENDER_MODULES } from "../render/modules/index.js";
+import { resolveParkourStyle } from "../render/modules/parkour.js";
 
 /** The renderer options a client may set (JSON values only: no resolvers or callbacks). Anything else in `options` is rejected. */
 export const ALLOWED_OPTIONS = Object.freeze({
@@ -14,7 +15,7 @@ export const ALLOWED_OPTIONS = Object.freeze({
   renderTiledBackgrounds: "boolean", compositeRandomBackground: "boolean", randomBackgroundIndex: "number", randomDecorationFlip: "boolean",
   textures: "boolean", textureSeed: "number", pregeneratedBitmaps: "boolean", cheeseSuffix: "string", defaultAssets: "boolean", flashBlur: "boolean",
   scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport",
-  modules: "modules", parkourNails: "boolean",
+  modules: "modules", parkourNails: "boolean", parkourStyle: "parkour-style",
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */
 const ALIASES = Object.freeze({ mirror: "mirrorX" });
@@ -25,6 +26,10 @@ export class RequestError extends Error {
 
 function checkOption(name, value) {
   const rule = ALLOWED_OPTIONS[name];
+  if (rule === "parkour-style") {
+    try { resolveParkourStyle(value); } catch (error) { throw new RequestError(`invalid value for option "${name}": ${error.message}`); }
+    return;
+  }
   const ok = Array.isArray(rule) ? rule.includes(value)
     : rule === "boolean" ? typeof value === "boolean"
     : rule === "number" ? typeof value === "number" && Number.isFinite(value)
@@ -65,7 +70,8 @@ export function sizeSvg(svg, width, height) {
 
 /**
  * @param {object} config
- * @param {{rasterize: Function, name: string}} config.rasterizer
+ * @param {{rasterize: Function, name: string}} config.rasterizer `rasterize(svg, { width, height, signal })`; `signal` aborts on timeout.
+ *   A `RasterizerCrashError` (the picture crashed the rasterizer's process) is answered with 422
  * @param {object} [config.assetResolver] resolver of the loaded asset release (placeholders when absent)
  * @param {number} [config.maxXmlBytes] default 2 MB
  * @param {number} [config.maxPixels] largest output (width * height), default 4096 * 4096
@@ -149,9 +155,16 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     let result;
     try {
       let timer;
-      const timeout = new Promise((_, reject) => { timer = setTimeout(() => reject(new RequestError("rendering took too long", 503)), timeoutMs); });
+      // On timeout the rasterizer is told to stop (a pool kills that child), so the picture does not keep a process busy.
+      const controller = new AbortController();
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => { const error = new RequestError("rendering took too long", 503); controller.abort(error); reject(error); }, timeoutMs);
+      });
       try {
-        result = await Promise.race([rasterizer.rasterize(sizeSvg(svg, width, height), { width, height }), timeout]);
+        result = await Promise.race([rasterizer.rasterize(sizeSvg(svg, width, height), { width, height, signal: controller.signal }), timeout]);
+      } catch (error) {
+        if (error?.name === "RasterizerCrashError") throw new RequestError(error.message, error.status ?? 422);
+        throw error;
       } finally {
         clearTimeout(timer);
       }

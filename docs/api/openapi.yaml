@@ -33,6 +33,7 @@ paths:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/Error" }
         "413": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
         "500": { $ref: "#/components/responses/Error" }
   /health:
@@ -51,6 +52,7 @@ paths:
                   running: { type: integer, description: Renders in progress. }
                   waiting: { type: integer, description: Requests in the queue. }
                   backend: { type: string, example: resvg }
+                  rasterizerProcesses: { type: integer, description: Child processes that rasterize (0 = in the server process). }
                   release: { type: boolean, description: Whether an asset release is loaded. }
                   mapImages: { type: boolean, description: Whether the server fetches map images (off with --no-map-images). }
 components:
@@ -148,6 +150,23 @@ components:
           type: boolean
           default: true
           description: Draw each parkour checkpoint's nail again over its mouse, as Miceditor does.
+        parkourStyle:
+          type: object
+          additionalProperties: false
+          description: Look of the parkour overlay. Unset fields keep their defaults.
+          properties:
+            stopColor: { type: string, nullable: true, pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", description: Tint of a stop checkpoint's mouse; null is the default blue. }
+            stopAmount: { type: number, minimum: 0, maximum: 1, default: 0.6, description: How far the mouse is mixed towards stopColor. }
+            number: { $ref: "#/components/schemas/ParkourLabel" }
+            size: { $ref: "#/components/schemas/ParkourLabel" }
+    ParkourLabel:
+      type: object
+      additionalProperties: false
+      description: "A parkour label: number defaults to height 9, size (the x2 label) to height 7; white on #1b1f2b."
+      properties:
+        height: { type: number, minimum: 1, maximum: 100, description: Digit height in map pixels. }
+        color: { type: string, pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
+        outline: { type: string, pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" }
     RenderResponse:
       type: object
       properties:

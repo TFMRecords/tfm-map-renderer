@@ -124,7 +124,8 @@ This keeps a huge map cheap to draw part by part, and it keeps resvg running: re
 an exception) on a layer (a clip, a filter, a mask, group opacity, or a nested `<svg>` such as every placed picture) that lies
 wholly outside a band of about twice the canvas around the picture. A map with a ground at `X="4000000"`, drawn with an
 800 x 400 viewport, did that before culling, and so did ordinary maps with a zoomed or rotated viewport. One case remains: a
-single texture tile or picture many times larger than the canvas (a 40 px tile at a scale of 40) can still panic.
+single texture tile or picture many times larger than the canvas (a 40 px tile at a scale of 40) can still panic. The server
+rasterises in child processes, so such a picture ends one child and gets a 422 ([`api/http.md`](api/http.md#performance)).
 
 ## Renderer choices
 

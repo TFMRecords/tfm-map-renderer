@@ -115,3 +115,18 @@ test("parkour overlay: the nail is drawn again over each checkpoint mouse unless
   assert.match(renderTfmSvg(map, { assetResolver: resolver, mirrorX: true }), /<g transform="rotate\(-30\)" data-parkour="nail">/);
   assert.doesNotMatch(renderTfmSvg(map, { assetResolver: resolver, parkourNails: false }), /data-parkour="nail"/);
 });
+
+test("parkour overlay: parkourStyle sets the stop tint and the labels, and is checked", () => {
+  const map = parseTfmMap(`<C><P/><Z><S/><D><DS X="50" Y="50"/>${CHAIR}</D><O><O C="22" X="100" Y="100" size="2" stop=""/></O></Z></C>`);
+  const plain = renderTfmSvg(map);
+  assert.equal(renderTfmSvg(map, { parkourStyle: {} }), plain);
+  assert.match(plain, /values="0.35 0 0 0 0  0 0.45 0 0 0.05  0 0 0.6 0 0.42  0 0 0 1 0"/);
+  // #ff0000 at 0.5: half the colour plus half the red.
+  assert.match(renderTfmSvg(map, { parkourStyle: { stopColor: "#f00", stopAmount: 0.5 } }), /values="0.5 0 0 0 0.5  0 0.5 0 0 0  0 0 0.5 0 0  0 0 0 1 0"/);
+  const styled = renderTfmSvg(map, { parkourStyle: { number: { height: 18, color: "#ffee00" }, size: { outline: "#000000" } } });
+  assert.match(styled, /stroke="#ffee00" stroke-width="3"/);
+  assert.match(styled, /stroke="#000000"/);
+  assert.throws(() => renderTfmSvg(map, { parkourStyle: { stopColor: "red" } }), /stopColor must be a colour/);
+  assert.throws(() => renderTfmSvg(map, { parkourStyle: { number: { font: "x" } } }), /unknown setting "font"/);
+  assert.throws(() => renderTfmSvg(map, { parkourStyle: { size: { height: 0 } } }), /from 1 to 100/);
+});

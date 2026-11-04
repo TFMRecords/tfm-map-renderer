@@ -35,6 +35,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--no-flash-blur` | | Gaussian blurs instead of Flash's box blurs |
 | `--no-share-assets` | | every placement of a picture as its own `<image>` (slower; see "Performance") |
 | `--concurrency N` | 2 | renders at the same time; further requests wait in a queue of 16 |
+| `--rasterizer-processes N` | `--concurrency` | child processes that rasterise ([below](#performance)); each draws one picture at a time. 0 rasterises in the server process |
 | `--timeout MS` | 30000 | per render |
 | `--max-pixels N` | 16777216 | largest output (width times height); at most 8192 per side |
 | `--no-map-images` | | do not fetch the map's own images ([below](#map-images)); also `TFM_MAP_IMAGES=0` |
@@ -97,6 +98,7 @@ Errors are `{ "error": "message" }`:
 | 400 | not JSON, missing `xml`, XML that cannot be parsed, an unknown or invalid option, an output above the size limits |
 | 404 | another path |
 | 413 | `xml` above 2 MB, or the body above 3 MB |
+| 422 | the picture crashed the rasteriser's process (a resvg bug; the server keeps running) |
 | 503 | the queue is full, or the render took longer than the timeout |
 | 500 | an internal error |
 
@@ -131,6 +133,12 @@ the SVG about 2 ms; rasterising is nearly all of the time (61 ms on average, 300
 - **Shared assets** (on by default): every distinct picture is defined once and placed with `<use>`, instead of one embedded
   image per placement. Maps with many repeated grounds, objects or nails render 2 to 7 times faster. Anti-aliased edge pixels
   can move slightly; `--no-share-assets` turns it off.
-- **Concurrency**: rasterising runs on the libuv thread pool (`UV_THREADPOOL_SIZE`, default 4), so `--concurrency` renders in
-  parallel and the event loop stays free.
+- **Concurrency**: rasterising runs in a pool of child processes (`--rasterizer-processes`, by default as many as
+  `--concurrency`), so renders run in parallel and the event loop stays free. A pool larger than `--concurrency` leaves
+  processes idle. Each process holds its own resvg (some tens of MB). Sending the SVG and the PNG between processes costs a
+  few milliseconds; the times above did not change measurably.
+- **Crashes**: resvg aborts its process on some pictures (a Rust panic, not an exception; [`../rendering.md`](../rendering.md#culling)).
+  The renderer avoids the known cases, and the pool contains the rest: only that child ends, the request is answered with 422,
+  and a new child starts. On timeout the child drawing the picture is stopped the same way. With `--rasterizer-processes 0`
+  resvg runs in the server, and such a crash ends the server.
 - **Result cache**: 64 results, keyed by the whole request.

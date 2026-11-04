@@ -65,6 +65,7 @@ and the server's list in step.
 | `renderHideOffscreenFrame` [false] | the frame of `Ca` maps around the 800 x 600 play area |
 | `modules` [{ parkour: "auto" }] | overlays of Lua modules (below); `false` hides them all |
 | `parkourNails` [true] | the parkour overlay draws each checkpoint's nail again over its mouse |
+| `parkourStyle` | look of the parkour overlay ([below](#modules)) |
 | `resolveDecorationAsset`, `resolveObjectAsset` | callbacks that supply decoration or object pictures directly |
 
 Server-only request fields are in [`http.md`](http.md).
@@ -78,6 +79,19 @@ the module's maps), `true` (always) or `false` (never); `modules: false` turns t
 | Module | Detected by | Overlay |
 |---|---|---|
 | `parkour` | the end chair (decoration 19 coloured `329cd2`) | at every checkpoint: its number above it; a mouse at every nail (the editor's spawn picture) with the nail drawn again over it, turned as in the map (as in Miceditor; `parkourNails: false` leaves it out); when the size is not 1, a dotted circle of radius 16 x `size` and an `x2`-style label at the corner; a small cheese above the mouse for `cheese`, crossed out in red when the checkpoint takes it away; a blue tint on the mouse for `stop`. The spawn gets the annotations only (the spawn marker is the mouse); the chair is drawn by the map |
+
+`parkourStyle` changes the look of the overlay; unset fields keep their defaults:
+
+```js
+parkourStyle: {
+  stopColor: "#ff3300", // tint of a `stop` checkpoint's mouse ("#rgb" or "#rrggbb"); null (default) is the blue above
+  stopAmount: 0.6,      // 0 to 1: how far the mouse is mixed towards stopColor
+  number: { height: 9, color: "#ffffff", outline: "#1b1f2b" }, // the checkpoint number; height in map pixels, 1 to 100
+  size: { height: 7, color: "#ffffff", outline: "#1b1f2b" },   // the x2-style size label
+}
+```
+
+A taller number grows upwards and a taller size label downwards, away from the mouse.
 
 Numbers and labels are drawn as paths, not text, so they look the same in every rasteriser. In a mirrored room the checkpoints
 move with the map but their labels stay readable.

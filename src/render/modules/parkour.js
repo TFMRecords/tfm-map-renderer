@@ -4,8 +4,58 @@ import { DEFAULT_MARKER_STYLES } from "../default-assets.js";
 import { glyphLabel } from "../glyphs.js";
 import { attr, finiteOr, imageElement, resolveImage } from "../svg-util.js";
 
-const STOP_FILTER = `<filter id="parkour-stop" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.35 0 0 0 0  0 0.45 0 0 0.05  0 0 0.6 0 0.42  0 0 0 1 0"/></filter>`;
+// The default blue of a `stop` checkpoint's mouse; `parkourStyle.stopColor` replaces it with a mix towards one colour.
+const STOP_MATRIX = "0.35 0 0 0 0  0 0.45 0 0 0.05  0 0 0.6 0 0.42  0 0 0 1 0";
 const format = (n) => String(Math.round(n * 100) / 100);
+
+/** The defaults of `parkourStyle`: the checkpoint number above each checkpoint and the size label at its corner. */
+export const DEFAULT_PARKOUR_STYLE = Object.freeze({
+  stopColor: null,
+  stopAmount: 0.6,
+  number: Object.freeze({ height: 9, color: "#ffffff", outline: "#1b1f2b" }),
+  size: Object.freeze({ height: 7, color: "#ffffff", outline: "#1b1f2b" }),
+});
+const COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+/**
+ * `parkourStyle` merged over `DEFAULT_PARKOUR_STYLE`, checked: `stopColor` ("#rgb" or "#rrggbb"; null = the default blue),
+ * `stopAmount` (0 to 1, how far the mouse is mixed towards `stopColor`), and `number` / `size` label settings `{ height, color,
+ * outline }` (height 1 to 100 map pixels, colours as above). Throws a TypeError on anything else.
+ */
+export function resolveParkourStyle(value) {
+  if (value == null) return DEFAULT_PARKOUR_STYLE;
+  const fail = (what) => { throw new TypeError(`options.parkourStyle${what}`); };
+  if (typeof value !== "object" || Array.isArray(value)) fail(" must be an object");
+  const color = (v, name) => (v === undefined ? undefined : typeof v === "string" && COLOR.test(v) ? v : fail(`.${name} must be a colour like "#3366ff"`));
+  const label = (v, name) => {
+    if (v === undefined) return DEFAULT_PARKOUR_STYLE[name];
+    if (!v || typeof v !== "object" || Array.isArray(v)) fail(`.${name} must be an object`);
+    for (const key of Object.keys(v)) if (!["height", "color", "outline"].includes(key)) fail(`.${name}: unknown setting "${key}"`);
+    if (v.height !== undefined && !(Number.isFinite(v.height) && v.height >= 1 && v.height <= 100)) fail(`.${name}.height must be a number from 1 to 100`);
+    const base = DEFAULT_PARKOUR_STYLE[name];
+    return { height: v.height ?? base.height, color: color(v.color, `${name}.color`) ?? base.color, outline: color(v.outline, `${name}.outline`) ?? base.outline };
+  };
+  for (const key of Object.keys(value)) if (!(key in DEFAULT_PARKOUR_STYLE)) fail(`: unknown setting "${key}"`);
+  if (value.stopAmount !== undefined && !(Number.isFinite(value.stopAmount) && value.stopAmount >= 0 && value.stopAmount <= 1)) fail(".stopAmount must be a number from 0 to 1");
+  return {
+    stopColor: value.stopColor === null ? null : color(value.stopColor, "stopColor") ?? null,
+    stopAmount: value.stopAmount ?? DEFAULT_PARKOUR_STYLE.stopAmount,
+    number: label(value.number, "number"),
+    size: label(value.size, "size"),
+  };
+}
+
+function stopFilter(style) {
+  let values = STOP_MATRIX;
+  if (style.stopColor) {
+    const hex = style.stopColor.length === 4 ? style.stopColor.replace(/[0-9a-f]/gi, (c) => c + c) : style.stopColor;
+    const a = style.stopAmount;
+    const [r, g, b] = [1, 3, 5].map((i) => format(a * parseInt(hex.slice(i, i + 2), 16) / 255));
+    const k = format(1 - a);
+    values = `${k} 0 0 0 ${r}  0 ${k} 0 0 ${g}  0 0 ${k} 0 ${b}  0 0 0 1 0`;
+  }
+  return `<filter id="parkour-stop" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${values}"/></filter>`;
+}
 
 function clip(resolver, key, x, y) {
   const asset = resolveImage(resolver, key, "sprite", { key });
@@ -45,10 +95,11 @@ function cheese(resolver, mode) {
  * the spawn marker already draws a mouse there; the chair (the last checkpoint) is drawn by the map itself.
  * With `nails` (the default) the nail of each checkpoint is drawn again over its mouse, as Miceditor does.
  * @param {object} data `map.modules.parkour`
- * @param {{resolver?: object, mirrored?: boolean, map?: object, nails?: boolean, visible?: Function}} context `map` gives the nails' rotation;
- *   `visible` leaves out the checkpoints outside the viewport (src/render/cull.js)
+ * @param {{resolver?: object, mirrored?: boolean, map?: object, nails?: boolean, visible?: Function, parkourStyle?: object}} context `map` gives the nails' rotation;
+ *   `visible` leaves out the checkpoints outside the viewport (src/render/cull.js); `parkourStyle` see `resolveParkourStyle`
  */
-export function renderParkour(data, { resolver = null, mirrored = false, map = null, nails = true, visible = () => true } = {}) {
+export function renderParkour(data, { resolver = null, mirrored = false, map = null, nails = true, visible = () => true, parkourStyle = null } = {}) {
+  const style = resolveParkourStyle(parkourStyle);
   const out = [];
   let stops = false;
   for (const c of data?.checkpoints ?? []) {
@@ -56,7 +107,7 @@ export function renderParkour(data, { resolver = null, mirrored = false, map = n
     const size = finiteOr(c.size, 1);
     const radius = Math.max(2, Math.abs(size) * 16 - 1);
     // The mouse, nail, cheese and labels all fit in this box (src/render/cull.js).
-    const reach = radius + 50;
+    const reach = radius + 50 + 2 * Math.max(style.number.height, style.size.height);
     if (!visible({ x: -reach, y: -reach, width: 2 * reach, height: 2 * reach }, { x: c.x, y: c.y })) continue;
     const parts = [];
     if (c.kind === "nail") {
@@ -67,12 +118,14 @@ export function renderParkour(data, { resolver = null, mirrored = false, map = n
     // The size circle only where the size differs from the default.
     if (size !== 1) parts.push(`<circle${attr("r", format(radius))}${attr("fill", "none")}${attr("stroke", "#ffffff")}${attr("stroke-opacity", 0.85)}${attr("stroke-width", 1.5)}${attr("stroke-dasharray", "3 3")}/>`);
     if (c.cheese) parts.push(cheese(resolver, c.cheese));
-    parts.push(glyphLabel(String(c.number), { y: -Math.max(30, radius + 8), anchor: "middle", height: 9 }));
-    if (size !== 1) parts.push(glyphLabel(`×${format(size)}`, { x: 9, y: 14, height: 7 }));
+    // The number keeps its bottom edge and the size label its top edge whatever their height, so they grow away from the mouse.
+    const { number: n, size: z } = style;
+    parts.push(glyphLabel(String(c.number), { y: -Math.max(30, radius + 8) - (n.height - 9) / 2, anchor: "middle", height: n.height, color: n.color, outline: n.outline }));
+    if (size !== 1) parts.push(glyphLabel(`×${format(size)}`, { x: 9, y: 14 + (z.height - 7) / 2, height: z.height, color: z.color, outline: z.outline }));
     // In a mirrored room the outer transform flips the picture; the local flip keeps the checkpoint (and its labels) readable.
     const transform = `translate(${c.x} ${c.y})${mirrored ? " scale(-1 1)" : ""}`;
     out.push(`<g${attr("transform", transform)}${attr("data-role", "parkour-checkpoint")}${attr("data-number", c.number)}>${parts.join("")}</g>`);
   }
   if (!out.length) return "";
-  return `<g${attr("data-module", "parkour")}>${stops ? `<defs>${STOP_FILTER}</defs>` : ""}${out.join("")}</g>`;
+  return `<g${attr("data-module", "parkour")}>${stops ? `<defs>${stopFilter(style)}</defs>` : ""}${out.join("")}</g>`;
 }

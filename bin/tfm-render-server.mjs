@@ -16,7 +16,7 @@
 //                     cached in memory, and drawn ($TFM_MAP_IMAGES=0 also turns it off; a request can with "mapImages": false)
 //   --max-map-images N   most images fetched for one map (default 32)     --max-image-bytes N   largest image (default 4000000)
 //   --unofficial-images  also load absolute URLs on other hosts where the game can (ground i, tiled D)   (docs/api/http.md#map-images)
-//   --default-options JSON   renderer options every request gets unless it sets them, e.g. '{"spawnMarkers":"editor"}' (default $TFM_RENDER_DEFAULT_OPTIONS)
+//   --default-options JSON   renderer options every request gets unless it sets them, e.g. '{"spawnMarkers":"none"}' (default $TFM_RENDER_DEFAULT_OPTIONS)
 //   --max-map-size WxH   soft limit: a larger map (or viewport) is drawn only up to W x H map pixels from its top-left corner, with a
 //                     "map-cropped" warning, instead of failing (default $TFM_MAX_MAP_SIZE, else none); one number is both
 import { existsSync } from "node:fs";

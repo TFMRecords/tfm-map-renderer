@@ -399,8 +399,12 @@ function keepUpright(element, x) {
 /** The box culling holes, cheese and the placeholder marks: larger than any of their clips. */
 const MARKER_BOX = Object.freeze({ x: -100, y: -100, width: 200, height: 200 });
 
-function markerParts(map, resolver, { cheeseSuffix = "", spawnMarkers = "circles", mirrored = false, visible = ALL } = {}) {
+function markerParts(map, resolver, { cheeseSuffix = "", spawnMarkers = "editor", mirrored = false, visible = ALL } = {}) {
   const layers = { back: [], ground: [], objects: [] };
+  // Without the editor's pictures (no asset release) the spawns would vanish: circles instead. Only asked when the map has spawns.
+  const SPAWNS = ["mouse-spawn", "shaman-spawn", "dual-shaman-spawn"];
+  if (spawnMarkers === "editor" && (map.decorations ?? []).some((d) => SPAWNS.includes(d.role))
+    && !resolveImage(resolver, "AnimStatique", "sprite", { key: "AnimStatique" })) spawnMarkers = "circles";
   // `spawnMarkers: "editor"`: the in-game editor draws `AnimStatique` at a `DS` and `AnimStatiqueC` at a `DC`, and has no branch for
   // `DC2`: the loop then reuses the display object of the PREVIOUS node and only sets its x and y again, so a `DC2` right after a `DS` or `DC`
   // MOVES that clip to its own X/Y and draws nothing else (verified with markers-1: the clip of the DC appears at the DC2).
@@ -651,7 +655,7 @@ function assertWithinLimits(width, height, limits) {
  * It renders source geometry and all image records for which an AssetResolver
  * supplies an href. Without assets it falls back to built-in placeholders (grounds as plain
  * filled rectangles/circles, spawns, cheese and holes as simple marks); pass
- * `defaultAssets: false` to draw only what a resolver supplies. `renderTiledBackgrounds: true` draws the tiled `D` backgrounds (`#url,w,h`, external images: off by default). `backgroundColor` is the colour painted behind everything (default `DEFAULT_ROOM_COLOR`, the game's #6A7495, unless `defaultAssets` is false; `null`, `"none"` or `"transparent"` leave it transparent). `spawnMarkers` chooses how `DS`/`DC`/`DC2` are drawn: `"circles"` (default, simple dots), `"editor"` (the in-game editor's `AnimStatique`/`AnimStatiqueC` clips, including its `DC2` quirk) or `"none"` (the game draws none). It never fetches an external URL itself. Decorations and
+ * `defaultAssets: false` to draw only what a resolver supplies. `renderTiledBackgrounds: true` draws the tiled `D` backgrounds (`#url,w,h`, external images: off by default). `backgroundColor` is the colour painted behind everything (default `DEFAULT_ROOM_COLOR`, the game's #6A7495, unless `defaultAssets` is false; `null`, `"none"` or `"transparent"` leave it transparent). `spawnMarkers` chooses how `DS`/`DC`/`DC2` are drawn: `"editor"` (default: the in-game editor's `AnimStatique`/`AnimStatiqueC` clips, including its `DC2` quirk; circles when the resolver has no `AnimStatique`), `"circles"` (simple dots) or `"none"` (the game draws none). It never fetches an external URL itself. Decorations and
  * shaman objects can be connected to extracted sprite assets through explicit
  * resolver callbacks until their SWF symbol mapping is established.
  * With a resolver that knows the game's `$T_n` tiles (an asset release) grounds are drawn with the game's

@@ -27,7 +27,7 @@ test("minimalist mode and a resolver without the clip draw no decorations", () =
 
 test("an explicit resolveDecorationAsset callback replaces the default lookup", () => {
   seen.length = 0;
-  renderTfmSvg(parseTfmMap(xml), { assetResolver: resolver, resolveDecorationAsset: () => "custom.png" });
+  renderTfmSvg(parseTfmMap(xml), { assetResolver: resolver, spawnMarkers: "circles", resolveDecorationAsset: () => "custom.png" });
   assert.deepEqual([...new Set(seen)], ["custom.png"]);
 });
 
@@ -38,4 +38,13 @@ test("P = 0,2 (random flip in the client) is drawn unflipped unless randomDecora
   let flipped = 0;
   for (let seed = 0; seed < 20; seed++) if (/scale\(-1 1\)/.test(renderTfmSvg(map, { assetResolver: resolver, randomDecorationFlip: true, textureSeed: seed }))) flipped++;
   assert.ok(flipped > 0 && flipped < 20);
+});
+
+test("spawn markers are the editor's pictures by default, circles when the resolver has none", () => {
+  const map = parseTfmMap('<C><P L="800" H="400"/><Z><S/><D><DS X="100" Y="100"/></D><O/></Z></C>');
+  const withArt = { resolve: ({ source }) => (source === "AnimStatique" ? { href: "data:image/svg+xml;base64,AAAA", width: 10, height: 10, origin: { x: 5, y: 5 } } : null) };
+  assert.match(renderTfmSvg(map, { assetResolver: withArt }), /<image href="data:image\/svg\+xml;base64,AAAA"/);
+  const plain = renderTfmSvg(map, {});
+  assert.equal(plain, renderTfmSvg(map, { spawnMarkers: "circles" }));
+  assert.notEqual(plain, renderTfmSvg(map, { spawnMarkers: "none" }));
 });

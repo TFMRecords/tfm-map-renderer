@@ -37,7 +37,7 @@ export const OPTION_HELP = Object.freeze({
   randomBackgroundIndex: ["Game", "", "which candidate F=-2 picks when not composite"],
   randomDecorationFlip: ["Game", "false", "decorations with flip code 2 flip by a seeded coin"],
   objectPlaceholders: ["Editor", "true", "a dashed placeholder for objects without a picture"],
-  spawnMarkers: ["Editor", "circles", "circles, editor (the editor's spawn pictures) or none (the game)"],
+  spawnMarkers: ["Editor", "editor", "editor (the editor's spawn pictures; circles without the asset release), circles or none (the game)"],
   debugMarkers: ["Editor", "false", "outlines at every decoration and object position"],
   renderJoints: ["Editor", "true", "joints that have a style c"],
   renderAppearingImages: ["Shown later", "false", "ARPS images, as if shown"],

@@ -53,7 +53,7 @@ and the server's list in step.
 | `objectMode` ["editor"] | `"editor"` draws every object that has a picture; `"game"` only what the game creates |
 | `nailVisibility` ["all"] | `"client"` applies the game's rules for which nails show ([`objects.md`](../xml/objects.md#nails)) |
 | `objectPlaceholders` [true] | a dashed placeholder for objects without a picture (editor mode) |
-| `spawnMarkers` ["circles"] | `"circles"`, `"editor"` (the editor's spawn pictures) or `"none"` (the game) |
+| `spawnMarkers` ["editor"] | `"editor"` (the editor's spawn pictures; circles when the resolver has none, as without a release), `"circles"` or `"none"` (the game) |
 | `debugMarkers` [false] | outlines at every decoration and object position |
 | `cheeseSuffix` [""] | an event suffix for the cheese picture ([`decorations.md`](../xml/decorations.md#holes-and-cheese)) |
 | `flashBlur` [true] | Flash's box blurs for the hole glows; `false` uses a Gaussian blur |

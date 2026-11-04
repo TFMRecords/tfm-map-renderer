@@ -66,7 +66,7 @@ Responses allow any origin (CORS).
 | `width`, `height` | output size in pixels, 1 to 8192. One alone keeps the aspect ratio; both stretch the map to that size |
 | `raw` | `true`: the answer is the bare `image/png` (or `image/svg+xml` with `"rasterize": false`), with `x-map-width` and `x-map-height` headers |
 | `svg` | `true`: the answer also contains the SVG, even when rasterising fails ([below](#errors)) |
-| `rasterize` | `false` (needs `"svg": true`): answer with the SVG only, at its own size; resvg is not used, so `width`, `height` and the pixel limits do not apply |
+| `rasterize` | `false` (needs `"svg": true`): answer with the SVG only, at its own size; resvg is not used, so `width`, `height`, the pixel limits and `--max-map-size` do not apply |
 | `lenient` | `false`: strict XML parsing |
 | `mapImages` | `false`: skip the map's own images for this request |
 | `options` | renderer options ([`renderer.md`](renderer.md#options)), JSON values only. Unknown names are an error |

@@ -107,8 +107,9 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     if (body.rasterize !== undefined && typeof body.rasterize !== "boolean") throw new RequestError('"rasterize" must be true or false');
     const rasterize = body.rasterize !== false;
     if (!rasterize && body.svg !== true) throw new RequestError('"rasterize": false needs "svg": true');
-    // Nothing is rasterised for an SVG-only answer, so the renderer's output size check (`limits`) is off; `maxMapSize` still applies.
-    const options = { ...defaults, ...parseOptions(body), ...(maxMapSize ? { maxViewport: maxMapSize } : {}), ...(rasterize ? {} : { limits: false }) };
+    // The size limits protect the rasteriser: an SVG-only answer has neither the soft map size (`maxMapSize`) nor the renderer's
+    // output size check (`limits`).
+    const options = { ...defaults, ...parseOptions(body), ...(rasterize ? (maxMapSize ? { maxViewport: maxMapSize } : {}) : { limits: false }) };
     const withImages = Boolean(mapImages) && body.mapImages !== false;
     const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, rasterize, withImages])).digest("hex") : null;
     if (cacheKey && cache.has(cacheKey)) { const hit = cache.get(cacheKey); cache.delete(cacheKey); cache.set(cacheKey, hit); return { ...hit, cached: true }; }

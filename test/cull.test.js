@@ -56,6 +56,10 @@ test("server maxMapSize renders a huge map cropped, with a warning", async () =>
   assert.deepEqual(r.warnings.find((w) => w.code === "map-cropped"), { code: "map-cropped", severity: "info", x: 0, y: 0, width: 4800, height: 3200 });
   const small = await service.render({ xml: "<C><P/><Z><S/><D/><O/></Z></C>" });
   assert.equal(small.warnings.some((w) => w.code === "map-cropped"), false);
+  // Only the picture is cut: an SVG-only answer is the whole map.
+  const svgOnly = await service.render({ xml: HUGE, svg: true, rasterize: false });
+  assert.deepEqual([svgOnly.width, svgOnly.height], [8000000, 4000000]);
+  assert.equal(svgOnly.warnings.some((w) => w.code === "map-cropped"), false);
 });
 
 test("above the output limits the picture is truncated: the width up to 8192, then the rows that fit", async () => {

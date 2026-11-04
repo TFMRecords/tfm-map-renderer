@@ -36,6 +36,8 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | `--no-share-assets` | | every placement of a picture as its own `<image>` (slower; see "Performance") |
 | `--concurrency N` | 2 | renders at the same time; further requests wait in a queue of 16 |
 | `--rasterizer-processes N` | `--concurrency` | child processes that rasterise ([below](#performance)); each draws one picture at a time. 0 rasterises in the server process |
+| `--renderer R` | `$TFM_RENDERER`, else `resvg` | how PNGs are drawn unless a request sets `renderer`: `resvg` from the SVG, or `compositor` from the scene ([`../rendering.md`](../rendering.md#png-compositor)) |
+| `--picture-cache-mb N` | 256 | the compositor's picture cache in each rasteriser process |
 | `--timeout MS` | 30000 | per render |
 | `--max-pixels N` | 16777216 | largest output (width times height); at most 8192 per side. A larger picture is truncated ([below](#response)) |
 | `--no-map-images` | | do not fetch the map's own images ([below](#map-images)); also `TFM_MAP_IMAGES=0` |
@@ -50,7 +52,7 @@ node bin/tfm-render-server.mjs --port 3000 --release .assets/release
 | Request | Answer |
 |---|---|
 | `POST /` or `POST /render` | render (below) |
-| `GET /health` | `{ ok, running, waiting, backend, release, mapImages }` |
+| `GET /health` | `{ ok, running, waiting, backend, release, mapImages }` (`backend` the default renderer) |
 | `GET /test`, or `GET /` from a browser | a test page: paste XML or pick a file, edit the request JSON, press Render (Ctrl+Enter) |
 | `GET /` | usage text |
 
@@ -69,6 +71,7 @@ Responses allow any origin (CORS).
 | `rasterize` | `false` (needs `"svg": true`): answer with the SVG only, at its own size; resvg is not used, so `width`, `height`, the pixel limits and `--max-map-size` do not apply |
 | `lenient` | `false`: strict XML parsing |
 | `mapImages` | `false`: skip the map's own images for this request |
+| `renderer` | `resvg` or `compositor`: how this PNG is drawn (default `--renderer`); the answer's `backend` says which drew it |
 | `options` | renderer options ([`renderer.md`](renderer.md#options)), JSON values only. Unknown names are an error |
 
 Any renderer option may also be given at the top level, and `mirror` is short for `mirrorX`; unknown top-level fields are
@@ -103,7 +106,8 @@ pixels); `mapWidth` and `mapHeight` stay the map's own size. A picture above the
 all) is truncated, not scaled: the width is kept up to 8192, then the rows that fit, and only that top-left part of the map is
 drawn; an `image-truncated` warning gives the size asked for (`requestedWidth`, `requestedHeight`) and the size drawn (`width`,
 `height`). With `svg: true` the SVG is the one rasterised, so it is truncated too. A repeated identical request is answered from a
-cache of 64 results and has `"cached": true`.
+cache of 64 results and has `"cached": true`. When the compositor meets what it cannot draw (none of today's maps), resvg draws
+the picture, `backend` is `resvg` and a `compositor-fallback` warning counts what was `unsupported`.
 
 ## Errors
 
@@ -158,5 +162,11 @@ the SVG about 2 ms; rasterising is nearly all of the time (61 ms on average, 300
 - **Crashes**: resvg aborts its process on some pictures (a Rust panic, not an exception; [`../rendering.md`](../rendering.md#culling)).
   The renderer avoids the known cases, and the pool contains the rest: only that child ends, the request is answered with 422,
   and a new child starts. On timeout the child drawing the picture is stopped the same way. With `--rasterizer-processes 0`
-  resvg runs in the server, and such a crash ends the server.
+  resvg runs in the server, and such a crash ends the server. With the compositor, a map whose child crashed is drawn once more
+  in a new child with whole pictures (the compositor crops large pictures, and resvg can panic on a crop); only a second crash
+  is answered with 422.
+- **Compositor**: each child keeps its own picture cache (`--picture-cache-mb`), so a child is larger (up to about 700 MB
+  measured, against about 430 MB with resvg) and repeated pictures are drawn without resvg. On the corpus it is 1.2 to 1.5
+  times as fast as resvg in total ([`../rendering.md`](../rendering.md#png-compositor)). With `--rasterizer-processes 0` it draws in
+  the server process and blocks it while drawing.
 - **Result cache**: 64 results, keyed by the whole request.

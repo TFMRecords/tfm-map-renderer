@@ -150,17 +150,20 @@ A definition comes before the first node that refers to it.
 
 ## PNG compositor
 
-In progress, not yet used by the server: `src/raster` (`tfm-map-renderer/raster`) draws a scene straight into pixels, without
-writing SVG or passing the whole picture to resvg. `renderSceneStrips(scene, { pictures, onStrip })` draws horizontal strips
+`src/raster` (`tfm-map-renderer/raster`) draws a scene straight into pixels, without writing SVG or passing the whole picture to
+resvg; the server uses it with `--renderer compositor` or a request's `"renderer": "compositor"` ([`api/http.md`](api/http.md)). `renderSceneStrips(scene, { pictures, onStrip })` draws horizontal strips
 of about 16 MB of working pixels (`stripBytes`) and hands each one over as RGBA; `renderScenePng` writes them into a PNG as
 they come. Memory is one strip, the picture cache and the compressed PNG, whatever the size of the output.
 
 The game's pictures (the `image` nodes) come from a picture cache (`createPictureCache({ rasterize })`), which rasterises each one
 in device space: with its placement's scale, rotation and flip and its sub-pixel offset (to 1/8 pixel), so the compositor
 copies its pixels without resampling and it is as sharp as in resvg's picture. Placements a whole number of pixels apart share
-a raster; rasters are kept up to `maxBytes` (256 MB). A picture is always rasterised whole: resvg panics on crops much narrower
-than the picture ($F_4 at 6x, 9603 px wide, panics in crops up to 4000 px wide), so a picture above `maxPixels` (4096 x 4096)
-is rasterised smaller and stretched, and is softer. The server's rasteriser is resvg (`loadResvgPixels` in
+a raster; rasters are kept up to `maxBytes` (256 MB). A picture of a megapixel or more that is mostly out of view (a large ground
+rotated across a zoomed viewport) is rasterised cropped to the part that can show, on a 64 px grid; smaller pictures are always
+whole. resvg can panic on a crop ($F_4 at 6x, 9603 px wide, panics in crops up to 4000 px wide; a 177 x 129 picture cut in half
+panicked too), so `crop: false` keeps every picture whole: the server's pool draws a map whose process crashed once more that way,
+and the in-process rasteriser (`--rasterizer-processes 0`) never crops. A picture above `maxPixels` (4096 x 4096) is
+rasterised smaller and stretched, and is softer. The server's rasteriser is resvg (`loadResvgPixels` in
 src/server/rasterize.js); the compositor itself is plain JS.
 
 Everything else the compositor draws itself (src/raster/compositor.js and shapes.js), with smoothed edges:
@@ -183,6 +186,22 @@ corpus (every 25th) it is at most 0.63 %: the differences are single edge pixels
 offsets. With its pictures cached the compositor draws the test maps about 6 times as fast as resvg (0.8 s against 4.8 s), and
 the corpus sample 23 times (6.3 s against 149 s); with an empty cache, about 1.5 times (most of that time is resvg rasterising
 the pictures).
+
+Through the server (2 child processes, 2 requests at a time, every 25th corpus map, 279 maps, each child's picture cache kept
+across the maps), total time, resvg against the compositor:
+
+| Request | resvg | compositor | median | most pixels off by more than 48 |
+|---|---|---|---|---|
+| plain (800 x 400) | 89.8 s | 59.3 s | 271 / 148 ms | 0.63 % |
+| `width: 400` | 19.6 s | 15.4 s | 97 / 61 ms | 1.95 % (a 400 x 100 picture: edge pixels are many) |
+| `scale: 2` | 280.6 s | 203.1 s | 711 / 549 ms | 0.87 % |
+| `scale: 2.5`, 300 x 150 viewport | 74.5 s | 62.9 s | 239 / 114 ms | 1.25 % |
+| `scale: 1.5`, `rotation: 30`, `mirrorX` | 365.7 s | 309.5 s | 727 / 627 ms | 0.72 % |
+
+resvg failed three of these renders and the compositor none: one map took longer than 30 s at `scale: 2` and rotated (6.6 s
+and 16 s in the compositor), and one crashed resvg with the viewport (the compositor redrew it after a crash on a crop). The
+cost is memory: a child process reached 701 MB with the compositor (its picture cache is up to 256 MB of rasters, plus resvg's
+working memory for each large picture) against 430 MB with resvg; `--picture-cache-mb` sets the cache.
 
 ## Renderer choices
 

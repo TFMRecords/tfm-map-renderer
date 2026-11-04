@@ -26,8 +26,8 @@ needs vector pictures anyway) and resvg the rasteriser; there is no browser or c
 | `src/render/` | `renderTfmSvg` and its parts: ground textures, client limits, objects, shared assets | `src/tfm/`, a resolver |
 | `src/assets/` | release build and loading, bundles, resolvers, FFDec adapter, image URL rules | `src/swf/`, Node |
 | `src/swf/` | SWF reading: tags, display lists, the loader unwrap (a small AVM2 interpreter that runs the loader's own script) | nothing |
-| `src/raster/` | the PNG compositor, in progress ([`rendering.md`](rendering.md#png-compositor)): scenes drawn strip by strip (`compositor.js`), rasters of the game's pictures as placed (`pictures.js`; the rasteriser is passed in) | `src/render/`, `src/util/png.js` |
-| `src/server/` | the PNG render service and its HTTP front end | everything above, `@resvg/resvg-js` |
+| `src/raster/` | the PNG compositor ([`rendering.md`](rendering.md#png-compositor)): scenes drawn strip by strip (`compositor.js`), rasters of the game's pictures as placed (`pictures.js`; the rasteriser is passed in) | `src/render/`, `src/util/png.js` |
+| `src/server/` | the PNG render service and its HTTP front end; PNGs by resvg from the SVG or by the compositor from the scene (`--renderer`), in a pool of child processes | everything above, `@resvg/resvg-js` |
 | `src/util/` | Flash blur, PNG codec, screenshot comparison, archives | nothing |
 
 Entry points: `tfm-map-renderer` (`src/index.js`, browser-safe: parser, renderer, URL rules), `tfm-map-renderer/node`

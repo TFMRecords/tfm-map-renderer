@@ -59,6 +59,7 @@ function intersect(a, b) {
 }
 
 const union = (a, b) => (a ? { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) } : b);
+const grow = (a, m) => (m ? { x0: a.x0 - m, y0: a.y0 - m, x1: a.x1 + m, y1: a.y1 + m } : a);
 
 /**
  * A clip of a rectangle in the space of `m`: its four edges as half-planes in device pixels, `a x + b y + c` being the signed
@@ -123,14 +124,15 @@ export function sceneSize(scene, { width, height } = {}) {
 
 /**
  * @param {object} scene the root `svg` node of `renderTfmScene`
- * @param {{width?: number, height?: number}} size output size in pixels (default the scene's); the view box is fitted into it
- *   centred, keeping its aspect ratio (SVG's default `xMidYMid meet`)
+ * @param {{width?: number, height?: number, fit?: "meet"|"fill"}} size output size in pixels (default the scene's); the view
+ *   box is fitted into it centred, keeping its aspect ratio (`meet`, SVG's default `xMidYMid meet`), or stretched to it
+ *   (`fill`, as `preserveAspectRatio="none"`)
  */
-export function flattenScene(scene, { width, height } = {}) {
+export function flattenScene(scene, { width, height, fit = "meet" } = {}) {
   const { width: W, height: H } = sceneSize(scene, { width, height });
   const [vx, vy, vw, vh] = String(scene.viewBox ?? `0 0 ${W} ${H}`).trim().split(/[\s,]+/).map(Number);
   const s = Math.min(W / vw, H / vh);
-  const root = [s, 0, 0, s, (W - vw * s) / 2 - vx * s, (H - vh * s) / 2 - vy * s];
+  const root = fit === "fill" ? [W / vw, 0, 0, H / vh, (-vx * W) / vw, (-vy * H) / vh] : [s, 0, 0, s, (W - vw * s) / 2 - vx * s, (H - vh * s) / 2 - vy * s];
   const canvas = { x0: 0, y0: 0, x1: W, y1: H };
   const defs = new Map();
   const unsupported = {};
@@ -168,9 +170,6 @@ export function flattenScene(scene, { width, height } = {}) {
           const effect = filter.effect;
           if (effect?.kind !== "colorMatrix" && effect?.kind !== "glow") { note(`filter ${effect?.kind}`); walk(node.children, gm, groupClips, groupBox, out); return; }
           const layer = { kind: "layer", effect, ops: [], box: null, margin: 0 };
-          walk(node.children, gm, groupClips, groupBox, layer.ops);
-          for (const op of layer.ops) layer.box = union(layer.box, op.box);
-          if (!layer.box) return;
           if (effect.kind === "glow") {
             // Flash's glow at the group's scale: box blurs of blurX x blurY stage pixels (`flash: false`: three passes of the same spread as its Gaussian).
             const scale = Math.sqrt(Math.abs(gm[0] * gm[3] - gm[1] * gm[2]));
@@ -178,9 +177,12 @@ export function flattenScene(scene, { width, height } = {}) {
             const widthOf = (blur) => Math.max(1, Math.round(flash ? blur * scale : Math.sqrt(((blur / 2) * scale) ** 2 * 4 + 1)));
             layer.glow = { bx: widthOf(effect.blurX), by: widthOf(effect.blurY), passes: flash ? effect.passes ?? 1 : 3, strength: effect.strength ?? 1, color: parseColor(effect.color) ?? [0, 0, 0] };
             layer.margin = Math.ceil((layer.glow.passes * Math.max(layer.glow.bx, layer.glow.by)) / 2) + 1;
-            layer.box = intersect({ x0: layer.box.x0 - layer.margin, y0: layer.box.y0 - layer.margin, x1: layer.box.x1 + layer.margin, y1: layer.box.y1 + layer.margin }, canvas);
-            if (!layer.box) return;
           }
+          // The children are drawn `margin` pixels beyond what shows, which the glow reaches into.
+          walk(node.children, gm, groupClips, grow(groupBox, layer.margin), layer.ops);
+          for (const op of layer.ops) layer.box = union(layer.box, op.box);
+          layer.box = layer.box && intersect(grow(layer.box, layer.margin), groupBox);
+          if (!layer.box) return;
           out.push(layer);
           return;
         }
@@ -210,7 +212,8 @@ export function flattenScene(scene, { width, height } = {}) {
         if (!(w > 0 && h > 0) || !node.href) { note("image without a size"); return; }
         const opBox = intersect(box, boxOf(m, node.x ?? 0, node.y ?? 0, w, h));
         if (!opBox || !invert(m)) return;
-        out.push({ kind: "image", href: node.href, preserveAspectRatio: node.preserveAspectRatio, blend: node.blend ?? null, x: node.x ?? 0, y: node.y ?? 0, w, h, m, clips, box: opBox });
+        // `need`: where the picture can show, the same in every strip, so the picture cache crops it once for all strips.
+        out.push({ kind: "image", href: node.href, preserveAspectRatio: node.preserveAspectRatio, blend: node.blend ?? null, x: node.x ?? 0, y: node.y ?? 0, w, h, m, clips, box: opBox, need: opBox });
         return;
       }
       case "text":
@@ -377,7 +380,7 @@ function drawImage(op, target, pictures) {
   const area = span(op, target);
   if (!area) return;
   // The picture as it lands on the output (pictures.js): its pixels line up with the device pixels, so they are copied.
-  const picture = pictures.picture(op.href, op.m, { x: op.x, y: op.y, width: op.w, height: op.h }, op.preserveAspectRatio);
+  const picture = pictures.picture(op.href, op.m, { x: op.x, y: op.y, width: op.w, height: op.h }, op.preserveAspectRatio, op.need);
   if (!picture) return;
   const { data: t, x0, y0, scale, width: pw, height: ph } = picture;
   const { clips, blend } = op;
@@ -670,14 +673,14 @@ function drawOps(ops, target, pictures) {
 /**
  * Draws a scene strip by strip.
  * @param {object} scene the root node of `renderTfmScene`
- * @param {{pictures: ReturnType<import("./pictures.js").createPictureCache>, width?: number, height?: number, stripBytes?: number,
- *   onStrip: (rgba: Uint8Array, y: number, rows: number) => (void|Promise<void>)}} options `width` / `height` the output size
- *   (default the scene's); strips hold about `stripBytes` (default 16 MB) of working pixels; `onStrip` gets each strip as
+ * @param {{pictures: ReturnType<import("./pictures.js").createPictureCache>, width?: number, height?: number, fit?: string,
+ *   stripBytes?: number, onStrip: (rgba: Uint8Array, y: number, rows: number) => (void|Promise<void>)}} options `width` /
+ *   `height` the output size (default the scene's) and `fit` as for `flattenScene`; strips hold about `stripBytes` (default 16 MB) of working pixels; `onStrip` gets each strip as
  *   straight-alpha RGBA, top to bottom
  * @returns {Promise<{width: number, height: number, unsupported: object}>} `unsupported` counts the scene nodes not drawn
  */
-export async function renderSceneStrips(scene, { pictures, width, height, stripBytes = 16 * 1024 * 1024, onStrip }) {
-  const flat = flattenScene(scene, { width, height });
+export async function renderSceneStrips(scene, { pictures, width, height, fit, stripBytes = 16 * 1024 * 1024, onStrip }) {
+  const flat = flattenScene(scene, { width, height, fit });
   const W = flat.width, H = flat.height;
   const rows = Math.max(1, Math.min(H, Math.floor(stripBytes / (W * 16))));
   const work = new Float32Array(W * rows * 4);

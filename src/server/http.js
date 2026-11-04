@@ -12,6 +12,7 @@ POST / (or /render)   Content-Type: application/json
 
 Answer: JSON { "image": "<base64 png>", "mimeType": "image/png", "width", "height", "mapWidth", "mapHeight", "backend", "clientLoads", "warnings" }
         or the bare image/png with "raw": true. "svg": true adds the SVG text. "width" or "height" alone keep the aspect ratio; both stretch (fit: fill).
+        "renderer": "resvg" or "compositor" picks how the PNG is drawn (default: the server's --renderer).
 GET /health -> { ok: true, ... }
 GET /test (or / in a browser) -> a page to paste XML + JSON config and see the result
 `;

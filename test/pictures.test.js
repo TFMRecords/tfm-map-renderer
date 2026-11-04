@@ -36,7 +36,7 @@ test("placements a whole number of pixels apart share a raster; other offsets, s
   cache.picture("a", [2, 0, 0, 2, 5.5, 3], box);
   cache.picture("b", [1, 0, 0, 1, 5.5, 3], box);
   assert.equal(calls.length, 4);
-  assert.deepEqual(cache.stats, { hits: 1, misses: 4, evicted: 0, rasters: 4, bytes: (11 * 20 + 11 * 20 + 21 * 40 + 11 * 20) * 4 });
+  assert.deepEqual(cache.stats, { hits: 1, misses: 4, evicted: 0, cropped: 0, rasters: 4, bytes: (11 * 20 + 11 * 20 + 21 * 40 + 11 * 20) * 4 });
 });
 
 test("rasters are evicted oldest first past maxBytes, and a picture above maxPixels is rasterised smaller", () => {
@@ -51,6 +51,25 @@ test("rasters are evicted oldest first past maxBytes, and a picture above maxPix
   assert.equal(calls.length, 3, "a stayed");
   const big = cache.picture("d", [40, 0, 0, 40, 0, 0], box); // 400 x 800 = 320000 pixels
   assert.ok(big.scale < 1 && big.width * big.height <= 10_000 + big.width + big.height);
+});
+
+test("a large picture mostly out of view is cropped to the needed part, on a grid from its corner; crop: false keeps it whole", () => {
+  const calls = [];
+  const cache = createPictureCache({ rasterize: fakeRasterize(calls) });
+  const big = { x: 0, y: 0, width: 2000, height: 1000 };
+  const p = cache.picture("a", [1, 0, 0, 1, 10, 20], big, undefined, { x0: 200, y0: 30, x1: 300, y1: 90 });
+  assert.deepEqual([p.x0, p.y0, p.width, p.height], [138, 20, 192, 128], "columns 128 to 320 and rows 0 to 128 of the picture");
+  assert.match(calls[0], /transform="matrix\(1 0 0 1 -128 0\)"/);
+  const q = cache.picture("a", [1, 0, 0, 1, 15, 20], big, undefined, { x0: 205, y0: 30, x1: 305, y1: 90 });
+  assert.equal(q.data, p.data, "the same crop of a placement whole pixels away is shared");
+  assert.equal(cache.picture("a", [1, 0, 0, 1, 10, 20], big, undefined, { x0: 3000, y0: 0, x1: 3100, y1: 100 }), null, "out of view");
+  const most = cache.picture("a", [1, 0, 0, 1, 10, 20], big, undefined, { x0: 0, y0: 0, x1: 1900, y1: 1000 });
+  assert.deepEqual([most.width, most.height], [2000, 1000], "a crop that saves less than half is not made");
+  const whole = createPictureCache({ rasterize: fakeRasterize(), crop: false }).picture("a", [1, 0, 0, 1, 10, 20], big, undefined, { x0: 200, y0: 30, x1: 300, y1: 90 });
+  assert.deepEqual([whole.width, whole.height], [2000, 1000]);
+  const small = cache.picture("b", [1, 0, 0, 1, 0, 0], { x: 0, y: 0, width: 1000, height: 500 }, undefined, { x0: 0, y0: 0, x1: 64, y1: 64 });
+  assert.deepEqual([small.width, small.height], [1000, 500], "a picture under a megapixel is not cropped");
+  assert.equal(cache.stats.cropped, 2);
 });
 
 test("with resvg: premultiplied pixels of the placed picture", async (t) => {

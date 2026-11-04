@@ -2,7 +2,8 @@
 // (`{ xml, raw?, width?, height? }`) plus the renderer's options; the answer is JSON with the image in base64 (or the bare PNG with `raw: true`). No upload anywhere.
 import { createHash } from "node:crypto";
 import { parseTfmDocument } from "../tfm/parse-map.js";
-import { renderTfmSvg, renderedViewport } from "../render/svg.js";
+import { renderTfmScene, renderedViewport } from "../render/svg.js";
+import { sceneToSvg } from "../render/scene.js";
 import { shareSvgAssets } from "../render/share-assets.js";
 import { RENDER_MODULES } from "../render/modules/index.js";
 import { resolveParkourStyle } from "../render/modules/parkour.js";
@@ -19,6 +20,9 @@ export const ALLOWED_OPTIONS = Object.freeze({
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */
 const ALIASES = Object.freeze({ mirror: "mirrorX" });
+
+/** How a PNG is drawn: resvg from the SVG text, or the PNG compositor from the scene (docs/rendering.md#png-compositor). */
+export const RENDERERS = Object.freeze(["resvg", "compositor"]);
 
 export class RequestError extends Error {
   constructor(message, status = 400) { super(message); this.name = "RequestError"; this.status = status; }
@@ -70,8 +74,10 @@ export function sizeSvg(svg, width, height) {
 
 /**
  * @param {object} config
- * @param {{rasterize: Function, name: string}} config.rasterizer `rasterize(svg, { width, height, signal })`; `signal` aborts on timeout.
- *   A `RasterizerCrashError` (the picture crashed the rasterizer's process) is answered with 422
+ * @param {{rasterize: Function, renderScene?: Function, name: string}} config.rasterizer `rasterize(svg, { width, height, signal })`
+ *   for resvg, `renderScene(scene, { width, height, signal })` for the compositor (src/server/rasterize.js); `signal` aborts on
+ *   timeout. A `RasterizerCrashError` (the picture crashed the rasterizer's process) is answered with 422
+ * @param {"resvg"|"compositor"} [config.renderer] how PNGs are drawn unless a request sets `renderer`; default resvg
  * @param {object} [config.assetResolver] resolver of the loaded asset release (placeholders when absent)
  * @param {number} [config.maxXmlBytes] default 2 MB
  * @param {number} [config.maxPixels] largest output (width * height), default 4096 * 4096
@@ -85,8 +91,11 @@ export function sizeSvg(svg, width, height) {
  * @param {{width:number, height:number}} [config.maxMapSize] soft limit in map units: a larger map (or viewport) is drawn only up to
  *   this size from its top-left corner, with a `map-cropped` warning, instead of failing. Default none
  */
-export function createRenderService({ rasterizer, assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64, maxMapSize = null }) {
+export function createRenderService({ rasterizer, renderer: defaultRenderer = "resvg", assetResolver = null, mapImages = null, defaultOptions = {}, maxXmlBytes = 2_000_000, maxPixels = 4096 * 4096, maxDimension = 8192, timeoutMs = 30_000, concurrency = 2, maxQueue = 16, shareAssets = true, cacheEntries = 64, maxMapSize = null }) {
   const defaults = Object.freeze(parseOptions({ options: defaultOptions }));
+  const canCompose = typeof rasterizer?.renderScene === "function";
+  if (!RENDERERS.includes(defaultRenderer)) throw new TypeError(`renderer must be one of ${RENDERERS.join(", ")}`);
+  if (defaultRenderer === "compositor" && !canCompose) throw new TypeError("the compositor needs a rasterizer with renderScene");
   let running = 0;
   const waiting = [];
   const acquire = () => new Promise((resolve, reject) => {
@@ -106,12 +115,15 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     }
     if (body.rasterize !== undefined && typeof body.rasterize !== "boolean") throw new RequestError('"rasterize" must be true or false');
     const rasterize = body.rasterize !== false;
+    if (body.renderer !== undefined && !RENDERERS.includes(body.renderer)) throw new RequestError(`"renderer" must be one of ${RENDERERS.join(", ")}`);
+    const renderer = body.renderer ?? defaultRenderer;
+    if (renderer === "compositor" && !canCompose) throw new RequestError("this server has no compositor", 400);
     if (!rasterize && body.svg !== true) throw new RequestError('"rasterize": false needs "svg": true');
     // The size limits protect the rasteriser: an SVG-only answer has neither the soft map size (`maxMapSize`) nor the renderer's
     // output size check (`limits`).
     const options = { ...defaults, ...parseOptions(body), ...(rasterize ? (maxMapSize ? { maxViewport: maxMapSize } : {}) : { limits: false }) };
     const withImages = Boolean(mapImages) && body.mapImages !== false;
-    const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, rasterize, withImages])).digest("hex") : null;
+    const cacheKey = cacheEntries > 0 ? createHash("sha1").update(JSON.stringify([body.xml, options, body.width, body.height, body.lenient, body.svg === true, rasterize, withImages, rasterize && renderer])).digest("hex") : null;
     if (cacheKey && cache.has(cacheKey)) { const hit = cache.get(cacheKey); cache.delete(cacheKey); cache.set(cacheKey, hit); return { ...hit, cached: true }; }
     let parsed;
     try {
@@ -149,29 +161,35 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
     const assets = assetResolver && options.defaultAssets !== false ? assetResolver : null;
     const draw = (resolver) => {
       try {
-        return renderTfmSvg(map, { ...options, ...(resolver ? { assetResolver: resolver } : {}) });
+        return renderTfmScene(map, { ...options, ...(resolver ? { assetResolver: resolver } : {}) });
       } catch (error) {
         if (error instanceof RangeError) throw new RequestError(`${error.message} (pass "viewport": {"x":0,"y":0,"width":800,"height":400} to render a part of a huge map)`);
         throw error;
       }
     };
-    let svg;
+    let scene;
     let images = null;
     if (withImages) {
       // First pass: learn which map images the renderer draws; then fetch them and draw again with them embedded.
       const session = mapImages.session(assets);
-      svg = draw(session.recorder);
+      scene = draw(session.recorder);
       const { loaded, requested, missing } = await session.fetchAll();
       images = { requested, loaded: loaded.size, missing };
-      if (loaded.size) svg = draw(session.resolverWith(loaded));
+      if (loaded.size) scene = draw(session.resolverWith(loaded));
     } else {
-      svg = draw(assets);
+      scene = draw(assets);
     }
-    if (shareAssets) svg = shareSvgAssets(svg);
+    // The SVG text: for resvg, and for the answer with `svg: true`. The compositor draws the scene itself.
+    const composed = rasterize && renderer === "compositor";
+    let svg = null;
+    if (!composed || body.svg === true) {
+      svg = sceneToSvg(scene);
+      if (shareAssets) svg = shareSvgAssets(svg);
+    }
     const info = {
       mapWidth: map.settings.width ?? 800,
       mapHeight: map.settings.height ?? 400,
-      backend: rasterize ? rasterizer.name : "svg",
+      backend: !rasterize ? "svg" : composed ? "compositor" : rasterizer.name,
       clientLoads: map.source?.clientLoads ?? null,
       warnings: [
         ...(document.diagnostics ?? []).slice(0, 50),
@@ -198,7 +216,9 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
             timer = setTimeout(() => { const error = new RequestError("rendering took too long", 503); controller.abort(error); reject(error); }, timeoutMs);
           });
           try {
-            result = await Promise.race([rasterizer.rasterize(sizeSvg(svg, width, height), { width, height, signal: controller.signal }), timeout]);
+            const drawing = composed ? rasterizer.renderScene(scene, { width, height, signal: controller.signal })
+              : rasterizer.rasterize(sizeSvg(svg, width, height), { width, height, signal: controller.signal });
+            result = await Promise.race([drawing, timeout]);
           } catch (error) {
             if (error?.name === "RasterizerCrashError") throw new RequestError(error.message, error.status ?? 422);
             throw error;
@@ -214,6 +234,11 @@ export function createRenderService({ rasterizer, assetResolver = null, mapImage
         throw error;
       }
       response = { png: result.png, width: result.width, height: result.height, ...info };
+      // The compositor met what it cannot draw, and resvg drew the picture.
+      if (result.unsupported) {
+        response.backend = result.renderer ?? rasterizer.name;
+        response.warnings = [...info.warnings, { code: "compositor-fallback", severity: "info", unsupported: result.unsupported }];
+      }
     }
     // A render that misses map images is not kept: the next request tries them again.
     if (cacheKey && !images?.missing) { cache.set(cacheKey, response); if (cache.size > cacheEntries) cache.delete(cache.keys().next().value); }

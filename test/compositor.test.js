@@ -67,9 +67,46 @@ test("pictures are copied in device space, through clips and colour matrices; sy
   assert.deepEqual(pixel(7, 7), [0, 0, 0, 0], "the symbol's overflow is hidden");
 });
 
-test("what the compositor cannot draw yet is counted, not drawn", async () => {
-  const { unsupported } = await draw(svg([{ type: "path", d: "M0 0L5 5", stroke: "#000" }, { type: "text", text: "1" }]));
-  assert.deepEqual(unsupported, { path: 1, text: 1 });
+test("what the compositor cannot draw is counted; text is left out as resvg without fonts does", async () => {
+  const { unsupported, pixel } = await draw(svg([{ type: "path", d: "M0 0C5 5 5 5 9 9", stroke: "#000" }, { type: "text", text: "1", fill: "#000" }]));
+  assert.deepEqual(unsupported, { "path curve": 1 });
+  assert.deepEqual(pixel(5, 5), [0, 0, 0, 0]);
+});
+
+test("lines: round caps and joins, one coat where a translucent line crosses itself, dashes", async () => {
+  const { pixel } = await draw(svg([
+    { type: "path", d: "M1 5L8 5L1 5", fill: "none", stroke: "#ff0000", strokeWidth: 2, strokeOpacity: 0.5, strokeLinecap: "round", strokeLinejoin: "round" },
+    { type: "path", d: "M0 8.5h10", fill: "none", stroke: "#0000ff", strokeDasharray: "2 2" },
+  ]));
+  assert.deepEqual(pixel(4, 5), [255, 0, 0, 128], "the line drawn back over itself is painted once");
+  assert.equal(pixel(0, 5)[3] > 0, true, "the round cap reaches past the end");
+  assert.deepEqual([pixel(0, 8), pixel(1, 8), pixel(2, 8), pixel(3, 8)].map((p) => p[3]), [255, 255, 0, 0]);
+});
+
+test("outlines of rectangles and circles, and filled paths with the even-odd rule", async () => {
+  const { pixel } = await draw(svg([
+    { type: "rect", x: 2, y: 2, width: 6, height: 6, fill: "none", stroke: "#00ff00", strokeWidth: 2 },
+    { type: "circle", cx: 5, cy: 5, r: 2, fill: "none", stroke: "#0000ff" },
+  ]));
+  assert.deepEqual(pixel(1, 1), [0, 255, 0, 255], "on the outline, with a mitred corner");
+  assert.deepEqual(pixel(4, 4)[3], 0, "inside the outline, off the circle");
+  assert.equal(pixel(6, 4)[2] > 0, true, "on the circle");
+  const frame = await draw(svg([{ type: "path", d: "M0 0h10v10h-10zM3 3v4h4v-4z", fill: "#ff0000", fillRule: "evenodd" }]));
+  assert.deepEqual(frame.pixel(1, 1), [255, 0, 0, 255]);
+  assert.deepEqual(frame.pixel(5, 5), [0, 0, 0, 0], "the hole of the even-odd frame");
+});
+
+test("a glow spreads the alpha around the picture, the same across strip borders", async () => {
+  const scene = svg([
+    { type: "defs", children: [{ type: "filter", id: "g", effect: { kind: "glow", color: "#00ffff", blurX: 5, blurY: 5, strength: 3, passes: 3, flash: true } }] },
+    { type: "g", filter: "g", children: [{ type: "rect", x: 8, y: 8, width: 4, height: 4, fill: "#ff0000" }] },
+  ], "20 20");
+  const whole = await draw(scene);
+  assert.deepEqual(whole.pixel(10, 10), [255, 0, 0, 255], "the picture over its glow");
+  assert.equal(whole.pixel(6, 10)[3] > 0 && whole.pixel(6, 10)[1] === 255, true, "cyan glow beside it");
+  assert.deepEqual(whole.pixel(1, 1), [0, 0, 0, 0]);
+  const strips = await draw(scene, { stripBytes: 20 * 16 * 3 });
+  assert.deepEqual(strips.out, whole.out);
 });
 
 test("the picture does not depend on the strip height", async () => {

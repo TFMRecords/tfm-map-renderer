@@ -3,6 +3,7 @@
 // size they are drawn; everything else is drawn here. docs/rendering.md#png-compositor lists what it draws and how it differs from resvg.
 //
 // Pixels are premultiplied RGBA floats from 0 to 1 while drawing; each finished strip is handed over as straight-alpha RGBA bytes.
+import { boxBlur, dashCoverage, dashSegments, fillMask, parsePath, strokeMask } from "./shapes.js";
 
 // --- Matrices: [a, b, c, d, e, f] maps (x, y) to (a x + c y + e, b x + d y + f), as in SVG.
 
@@ -79,6 +80,23 @@ function rectClip(m, x, y, w, h) {
   return { edges, box: boxOf(m, x, y, w, h) };
 }
 
+const clamp01 = (n) => (n < 0 ? 0 : n > 1 ? 1 : n);
+
+/** The box of device points, grown by `grow` pixels. */
+function pointsBox(points, grow) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of points) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  return { x0: x0 - grow, y0: y0 - grow, x1: x1 + grow, y1: y1 + grow };
+}
+
+/** A `strokeDasharray` ("3 2") as lengths, an even number of them; null for none or a pattern of zeros. */
+function parseDashes(value) {
+  if (value == null || value === "none") return null;
+  const lengths = String(value).trim().split(/[\s,]+/).map(Number);
+  if (lengths.some((n) => !(n >= 0)) || !lengths.some((n) => n > 0)) return null;
+  return lengths.length % 2 ? [...lengths, ...lengths] : lengths;
+}
+
 // --- Colours.
 
 const NAMED = { black: "#000000", white: "#ffffff", red: "#ff0000", lime: "#00ff00", blue: "#0000ff" };
@@ -147,11 +165,23 @@ export function flattenScene(scene, { width, height } = {}) {
         if (node.filter != null) {
           const filter = defs.get(node.filter);
           if (filter?.type !== "filter") { note(`filter ${node.filter}`); return; }
-          if (filter.effect?.kind !== "colorMatrix") note(`filter ${filter.effect?.kind}`);
-          const layer = { kind: "layer", effect: filter.effect, ops: [], box: null };
+          const effect = filter.effect;
+          if (effect?.kind !== "colorMatrix" && effect?.kind !== "glow") { note(`filter ${effect?.kind}`); walk(node.children, gm, groupClips, groupBox, out); return; }
+          const layer = { kind: "layer", effect, ops: [], box: null, margin: 0 };
           walk(node.children, gm, groupClips, groupBox, layer.ops);
           for (const op of layer.ops) layer.box = union(layer.box, op.box);
-          if (layer.box) out.push(layer);
+          if (!layer.box) return;
+          if (effect.kind === "glow") {
+            // Flash's glow at the group's scale: box blurs of blurX x blurY stage pixels (`flash: false`: three passes of the same spread as its Gaussian).
+            const scale = Math.sqrt(Math.abs(gm[0] * gm[3] - gm[1] * gm[2]));
+            const flash = effect.flash !== false;
+            const widthOf = (blur) => Math.max(1, Math.round(flash ? blur * scale : Math.sqrt(((blur / 2) * scale) ** 2 * 4 + 1)));
+            layer.glow = { bx: widthOf(effect.blurX), by: widthOf(effect.blurY), passes: flash ? effect.passes ?? 1 : 3, strength: effect.strength ?? 1, color: parseColor(effect.color) ?? [0, 0, 0] };
+            layer.margin = Math.ceil((layer.glow.passes * Math.max(layer.glow.bx, layer.glow.by)) / 2) + 1;
+            layer.box = intersect({ x0: layer.box.x0 - layer.margin, y0: layer.box.y0 - layer.margin, x1: layer.box.x1 + layer.margin, y1: layer.box.y1 + layer.margin }, canvas);
+            if (!layer.box) return;
+          }
+          out.push(layer);
           return;
         }
         walk(node.children, gm, groupClips, groupBox, out);
@@ -183,14 +213,32 @@ export function flattenScene(scene, { width, height } = {}) {
         out.push({ kind: "image", href: node.href, preserveAspectRatio: node.preserveAspectRatio, blend: node.blend ?? null, x: node.x ?? 0, y: node.y ?? 0, w, h, m, clips, box: opBox });
         return;
       }
+      case "text":
+        return; // the server's resvg loads no fonts and draws no text either (the placeholders' type numbers)
+      case "path": {
+        const subpaths = parsePath(node.d);
+        if (!subpaths) { note("path curve"); return; }
+        const device = subpaths.map(({ points, closed }) => ({ closed, points: points.map(([x, y]) => apply(m, x, y)) }));
+        const scale = Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+        if (node.fill !== "none") {
+          const color = parseColor(node.fill ?? "#000000");
+          const alpha = clamp01(node.fillOpacity ?? 1);
+          if (!color) note(`fill ${node.fill}`);
+          else if (alpha > 0) {
+            const opBox = intersect(box, pointsBox(device.flatMap((d) => d.points), 1));
+            if (opBox) out.push({ kind: "fill", subpaths: device, rule: node.fillRule === "evenodd" ? "evenodd" : "nonzero", color, alpha, clips, box: opBox });
+          }
+        }
+        if (node.stroke != null && node.stroke !== "none") {
+          const dashes = parseDashes(node.strokeDasharray)?.map((n) => n * scale) ?? null;
+          const segments = device.flatMap(({ points, closed }) => dashSegments(points, closed, dashes));
+          pushStroke(out, node, segments, ((node.strokeWidth ?? 1) / 2) * scale, node.strokeLinecap ?? "butt", clips, box);
+        }
+        return;
+      }
       case "rect":
       case "circle":
       case "ellipse": {
-        if (node.stroke != null && node.stroke !== "none") note(`${node.type} stroke`);
-        if (node.fill === "none") return;
-        const color = parseColor(node.fill ?? "#000000");
-        if (!color) { note(`fill ${node.fill}`); return; }
-        const alpha = Math.min(1, Math.max(0, node.fillOpacity ?? 1));
         let shape;
         if (node.type === "rect") shape = { x: node.x ?? 0, y: node.y ?? 0, w: node.width ?? 0, h: node.height ?? 0 };
         else {
@@ -198,16 +246,51 @@ export function flattenScene(scene, { width, height } = {}) {
           shape = { cx: node.cx ?? 0, cy: node.cy ?? 0, rx: Math.abs(rx ?? 0), ry: Math.abs(ry ?? 0) };
           shape.x = shape.cx - shape.rx; shape.y = shape.cy - shape.ry; shape.w = 2 * shape.rx; shape.h = 2 * shape.ry;
         }
-        if (!(shape.w > 0 && shape.h > 0) || !alpha) return;
-        const opBox = intersect(box, boxOf(m, shape.x, shape.y, shape.w, shape.h));
+        if (!(shape.w > 0 && shape.h > 0)) return;
         const inv = invert(m);
-        if (!opBox || !inv) return;
-        out.push({ kind: node.type === "rect" ? "rect" : "ellipse", ...shape, color, alpha, inv, sx: Math.hypot(m[0], m[1]), sy: Math.hypot(m[2], m[3]), clips, box: opBox, hard });
+        if (!inv) return;
+        const sx = Math.hypot(m[0], m[1]), sy = Math.hypot(m[2], m[3]);
+        const scale = Math.sqrt(Math.abs(m[0] * m[3] - m[1] * m[2]));
+        if (node.fill !== "none") {
+          const color = parseColor(node.fill ?? "#000000");
+          const alpha = clamp01(node.fillOpacity ?? 1);
+          if (!color) note(`fill ${node.fill}`);
+          else if (alpha > 0) {
+            const opBox = intersect(box, boxOf(m, shape.x, shape.y, shape.w, shape.h));
+            if (opBox) out.push({ kind: node.type === "rect" ? "rect" : "ellipse", ...shape, color, alpha, inv, sx, sy, clips, box: opBox, hard });
+          }
+        }
+        if (node.stroke != null && node.stroke !== "none") {
+          const hw = (node.strokeWidth ?? 1) / 2;
+          const dashes = parseDashes(node.strokeDasharray);
+          if (node.type === "rect" && dashes) {
+            // A dashed outline: the rectangle as a closed line, cut into dashes.
+            const corners = [[shape.x, shape.y], [shape.x + shape.w, shape.y], [shape.x + shape.w, shape.y + shape.h], [shape.x, shape.y + shape.h]].map(([x, y]) => apply(m, x, y));
+            pushStroke(out, node, dashSegments(corners, true, dashes.map((n) => n * scale)), hw * scale, node.strokeLinecap ?? "butt", clips, box);
+          } else {
+            const color = parseColor(node.stroke);
+            const alpha = clamp01(node.strokeOpacity ?? 1);
+            if (!color) note(`stroke ${node.stroke}`);
+            else if (alpha > 0) {
+              const opBox = intersect(box, boxOf(m, shape.x - hw, shape.y - hw, shape.w + 2 * hw, shape.h + 2 * hw));
+              if (opBox) out.push({ kind: node.type === "rect" ? "rectStroke" : "ellipseStroke", ...shape, hw, dashes, color, alpha, inv, sx, sy, scale, clips, box: opBox });
+            }
+          }
+        }
         return;
       }
       default:
         note(node.type);
     }
+  }
+
+  function pushStroke(out, node, segments, hw, cap, clips, box) {
+    const color = parseColor(node.stroke);
+    const alpha = clamp01(node.strokeOpacity ?? 1);
+    if (!color) { note(`stroke ${node.stroke}`); return; }
+    if (!(alpha > 0) || !(hw > 0) || !segments.length) return;
+    const opBox = intersect(box, pointsBox(segments.flatMap(([x0, y0, x1, y1]) => [[x0, y0], [x1, y1]]), 2 * hw + 1));
+    if (opBox) out.push({ kind: "stroke", segments, hw, cap: cap === "round" || cap === "square" ? cap : "butt", color, alpha, clips, box: opBox });
   }
 
   function clipOf(clipPath, m) {
@@ -450,29 +533,137 @@ function colorMatrix(data, m) {
   }
 }
 
+/**
+ * Flash's GlowFilter on premultiplied pixels (w x h): the alpha blurred `passes` times, times `strength`, in `color`, under the
+ * picture (as the SVG filter of src/render/scene.js: feMerge of the glow and SourceGraphic).
+ */
+function glow(data, w, h, { bx, by, passes, strength, color }) {
+  const alpha = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) alpha[i] = data[i * 4 + 3];
+  for (let pass = 0; pass < passes; pass++) {
+    boxBlur(alpha, w, h, bx, true, pass % 2 === 1);
+    boxBlur(alpha, w, h, by, false, pass % 2 === 1);
+  }
+  for (let i = 0; i < w * h; i++) {
+    let g = alpha[i] * strength;
+    if (g <= 0) continue;
+    if (g > 1) g = 1;
+    const k = g * (1 - data[i * 4 + 3]);
+    data[i * 4] += color[0] * k; data[i * 4 + 1] += color[1] * k; data[i * 4 + 2] += color[2] * k; data[i * 4 + 3] += k;
+  }
+}
+
 function drawLayer(op, target, pictures) {
-  const area = span(op, target);
+  // A glow reaches `margin` pixels: the layer takes in that much more than the target, so strips join without a seam.
+  const m = op.margin ?? 0;
+  const area = span(op, m ? { x0: target.x0 - m, y0: target.y0 - m, x1: target.x1 + m, y1: target.y1 + m } : target);
   if (!area) return;
   const layer = { data: new Float32Array((area.x1 - area.x0) * (area.y1 - area.y0) * 4), ...area };
   drawOps(op.ops, layer, pictures);
   if (op.effect?.kind === "colorMatrix") colorMatrix(layer.data, op.effect.matrix);
+  if (op.glow) glow(layer.data, area.x1 - area.x0, area.y1 - area.y0, op.glow);
   const data = target.data, stride = target.x1 - target.x0, lw = area.x1 - area.x0;
-  for (let y = area.y0; y < area.y1; y++) {
-    let i = ((y - target.y0) * stride + (area.x0 - target.x0)) * 4;
-    let j = (y - area.y0) * lw * 4;
-    for (let x = area.x0; x < area.x1; x++, i += 4, j += 4) {
+  const cx0 = Math.max(area.x0, target.x0), cx1 = Math.min(area.x1, target.x1);
+  for (let y = Math.max(area.y0, target.y0); y < Math.min(area.y1, target.y1); y++) {
+    let i = ((y - target.y0) * stride + (cx0 - target.x0)) * 4;
+    let j = ((y - area.y0) * lw + (cx0 - area.x0)) * 4;
+    for (let x = cx0; x < cx1; x++, i += 4, j += 4) {
       const a = layer.data[j + 3];
       if (a > 0) put(data, i, layer.data[j], layer.data[j + 1], layer.data[j + 2], a, null);
     }
   }
 }
 
+/** Coverage of a rectangle's outline (miter corners) at local (u, v): the box grown by half the width less the box shrunk by it. */
+function rectStrokeCoverage(op, u, v) {
+  const box = (x, y, w, h) => {
+    const cu = Math.min((u - x) * op.sx + 0.5, (x + w - u) * op.sx + 0.5);
+    if (cu <= 0) return 0;
+    const cv = Math.min((v - y) * op.sy + 0.5, (y + h - v) * op.sy + 0.5);
+    if (cv <= 0) return 0;
+    return (cu < 1 ? cu : 1) * (cv < 1 ? cv : 1);
+  };
+  const { x, y, w, h, hw } = op;
+  const outer = box(x - hw, y - hw, w + 2 * hw, h + 2 * hw);
+  return outer && (w > 2 * hw && h > 2 * hw ? outer - box(x + hw, y + hw, w - 2 * hw, h - 2 * hw) : outer);
+}
+
+/** Coverage of an ellipse's outline at local (u, v), dashed from its rightmost point clockwise (as SVG). */
+function ellipseStrokeCoverage(op, u, v) {
+  const du = u - op.cx, dv = v - op.cy;
+  let d;
+  if (op.rx === op.ry) d = Math.abs(Math.hypot(du, dv) - op.rx);
+  else {
+    // Distance to the ellipse, to first order: |k - 1| / |grad k|.
+    const k = Math.hypot(du / op.rx, dv / op.ry);
+    const g = k ? Math.hypot(du / (op.rx * op.rx), dv / (op.ry * op.ry)) / k : 0;
+    d = g ? Math.abs(k - 1) / g : Math.min(op.rx, op.ry);
+  }
+  let c = (op.hw - d) * op.scale + 0.5;
+  if (c <= 0) return 0;
+  const thin = 2 * op.hw * op.scale;
+  if (c > 1) c = 1;
+  if (thin < 1 && c > thin) c = thin;
+  if (op.dashes) {
+    let angle = Math.atan2(dv / op.ry, du / op.rx);
+    if (angle < 0) angle += 2 * Math.PI;
+    c *= dashCoverage(angle * ((op.rx + op.ry) / 2), op.dashes, op.scale);
+  }
+  return c;
+}
+
+/** Draws a coverage mask built by `build(mask, area)` in the op's colour, through its clips. */
+function drawMask(op, target, build) {
+  const area = span(op, target);
+  if (!area) return;
+  const w = area.x1 - area.x0;
+  const mask = new Float32Array(w * (area.y1 - area.y0));
+  build(mask, area);
+  const { clips, color, alpha } = op;
+  const box = clips.length ? axisClip(clips) : null;
+  const data = target.data, stride = target.x1 - target.x0;
+  for (let py = area.y0; py < area.y1; py++) {
+    const rowWhole = box !== null && py >= box.y0 && py < box.y1;
+    let i = ((py - target.y0) * stride + (area.x0 - target.x0)) * 4;
+    let j = (py - area.y0) * w;
+    for (let px = area.x0; px < area.x1; px++, i += 4, j++) {
+      let c = mask[j];
+      if (c <= 0) continue;
+      if (c > 1) c = 1;
+      if (clips.length && !(rowWhole && px >= box.x0 && px < box.x1)) { c *= clipCoverage(clips, px + 0.5, py + 0.5); if (c <= 0) continue; }
+      const a = c * alpha;
+      put(data, i, color[0] * a, color[1] * a, color[2] * a, a, null);
+    }
+  }
+}
+
+/** Fills a mask from a coverage function of local coordinates (the inverse matrix of the op). */
+function localMask(op, coverage) {
+  return (mask, area) => {
+    const { inv } = op;
+    const w = area.x1 - area.x0;
+    for (let py = area.y0; py < area.y1; py++) {
+      const Y = py + 0.5;
+      let X = area.x0 + 0.5;
+      let u = inv[0] * X + inv[2] * Y + inv[4];
+      let v = inv[1] * X + inv[3] * Y + inv[5];
+      for (let px = area.x0, j = (py - area.y0) * w; px < area.x1; px++, X++, u += inv[0], v += inv[1], j++) mask[j] = coverage(op, u, v);
+    }
+  };
+}
+
 function drawOps(ops, target, pictures) {
   for (const op of ops) {
     if (op.box.y1 <= target.y0 || op.box.y0 >= target.y1 || op.box.x1 <= target.x0 || op.box.x0 >= target.x1) continue;
-    if (op.kind === "image") drawImage(op, target, pictures);
-    else if (op.kind === "layer") drawLayer(op, target, pictures);
-    else drawShape(op, target);
+    switch (op.kind) {
+      case "image": drawImage(op, target, pictures); break;
+      case "layer": drawLayer(op, target, pictures); break;
+      case "stroke": drawMask(op, target, (mask, area) => strokeMask(mask, area, op.segments, op.hw, op.cap)); break;
+      case "fill": drawMask(op, target, (mask, area) => fillMask(mask, area, op.subpaths, op.rule)); break;
+      case "rectStroke": drawMask(op, target, localMask(op, rectStrokeCoverage)); break;
+      case "ellipseStroke": drawMask(op, target, localMask(op, ellipseStrokeCoverage)); break;
+      default: drawShape(op, target);
+    }
   }
 }
 

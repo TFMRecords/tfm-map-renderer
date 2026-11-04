@@ -163,17 +163,26 @@ than the picture ($F_4 at 6x, 9603 px wide, panics in crops up to 4000 px wide),
 is rasterised smaller and stretched, and is softer. The server's rasteriser is resvg (`loadResvgPixels` in
 src/server/rasterize.js); the compositor itself is plain JS.
 
-Everything else the compositor draws itself: rectangles, circles and ellipses with smoothed edges, rectangular clips, the
-texture tiles (`use` of a `symbol`; inside a tile, edges are hard, so the tiles meet without seams), colour-matrix filters (on
-the group's own layer), and the `overlay` blend of the textures. Not drawn yet, and counted in `unsupported`: lines (`path`,
-the joints and the parkour labels), strokes of shapes, `text` (placeholders of objects without a picture) and the glow filter
-of holes.
+Everything else the compositor draws itself (src/raster/compositor.js and shapes.js), with smoothed edges:
 
-Compared with resvg on the test maps (800 x 400, with the release) the mean difference per pixel is below 1 of 255 for most
-maps and under 2.5 for all, and at most 0.6 % of the pixels differ by more than 48, all in maps with what is not drawn yet. On a
-sample of 278 maps of the real-map corpus, the 218 without joints stay under 0.7 %. With its pictures cached the compositor
-draws the test maps about 6 times as fast as resvg (0.7 s against 4.6 s); without, about 1.7 times (most of that time is resvg
-rasterising the pictures).
+- rectangles, circles and ellipses, filled and outlined (dashed outlines too; a rectangle's corners are mitred);
+- paths of straight segments (`M`, `L`, `H`, `V`, `Z`): filled with the nonzero or even-odd rule (the offscreen frame), and
+  stroked with their caps (joints, the parkour labels). A stroke is painted once, so a translucent joint that crosses itself
+  is not darker there; round caps also make round joins, other joins are left square-ended;
+- rectangular clips, and the texture tiles (`use` of a `symbol`; inside a tile edges are hard, so the tiles meet without seams);
+- colour-matrix filters and Flash's glow (hole glows), each on the group's own layer. A glow's blur scales with the picture
+  (resvg's does not: its box blurs are device pixels), and its layer reaches past the strip, so strips join without a seam;
+- the `overlay` blend of the textures.
+
+`text` is left out, as the server's resvg (no fonts loaded) does. Anything else, a path with curves for one, is counted in
+`unsupported` and not drawn; the renderer makes no such node today.
+
+Compared with resvg on the test maps (800 x 400, with the release), the mean difference per pixel is below 1 of 255 for most
+maps and under 2 for all, and at most 0.7 % of the pixels differ by more than 48. On a sample of 278 maps of the real-map
+corpus (every 25th) it is at most 0.63 %: the differences are single edge pixels, from the 1/8 pixel steps of the pictures'
+offsets. With its pictures cached the compositor draws the test maps about 6 times as fast as resvg (0.8 s against 4.8 s), and
+the corpus sample 23 times (6.3 s against 149 s); with an empty cache, about 1.5 times (most of that time is resvg rasterising
+the pictures).
 
 ## Renderer choices
 

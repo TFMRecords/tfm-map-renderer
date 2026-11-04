@@ -2,6 +2,7 @@
 // (kept in step with the JSON config below it), and the answer: the PNG, the SVG (whole, previewed by the browser on request),
 // the warnings and the response itself.
 import { ALLOWED_OPTIONS, RENDERERS } from "./render-service.js";
+import { EVENT_CHEESE_SUFFIXES } from "../tfm/spec/index.js";
 
 /** The request fields besides the renderer options: [name, kind, default shown, help]. */
 const REQUEST_FIELDS = [
@@ -33,7 +34,7 @@ export const OPTION_HELP = Object.freeze({
   restricted: ["Game", "false", "alias of clientLimits: restricted"],
   objectMode: ["Game", "editor", "editor: every object with a picture; game: only what the game creates"],
   nailVisibility: ["Game", "all", "client: the game's rules for which nails show"],
-  cheeseSuffix: ["Game", "", "an event suffix for the cheese picture"],
+  cheeseSuffix: ["Game", "none", "an event suffix for the cheese picture"],
   compositeRandomBackground: ["Game", "true", "F=-2 drawn as a strip of each candidate background; false picks one"],
   randomBackgroundIndex: ["Game", "", "which candidate F=-2 picks when not composite"],
   randomDecorationFlip: ["Game", "false", "decorations with flip code 2 flip by a seeded coin"],
@@ -52,9 +53,12 @@ export const OPTION_HELP = Object.freeze({
   parkourStyle: ["Modules", "", "look of the parkour overlay (JSON: stopColor, stopAmount, number, size)"],
 });
 
+/** Options the server takes as any string but whose values are all known: the form offers them as a list. */
+const FORM_CHOICES = { cheeseSuffix: EVENT_CHEESE_SUFFIXES };
+
 const SCHEMA = {
   request: REQUEST_FIELDS,
-  options: Object.entries(ALLOWED_OPTIONS).map(([name, rule]) => [name, rule, ...(OPTION_HELP[name] ?? ["Other", "", ""])]),
+  options: Object.entries(ALLOWED_OPTIONS).map(([name, rule]) => [name, FORM_CHOICES[name] ?? rule, ...(OPTION_HELP[name] ?? ["Other", "", ""])]),
 };
 
 const PAGE = String.raw`<!doctype html>

@@ -127,6 +127,27 @@ wholly outside a band of about twice the canvas around the picture. A map with a
 single texture tile or picture many times larger than the canvas (a 40 px tile at a scale of 40) can still panic. The server
 rasterises in child processes, so such a picture ends one child and gets a 422 ([`api/http.md`](api/http.md#performance)).
 
+## Scene
+
+The renderer first builds a scene (`renderTfmScene`, src/render/scene.js): a tree of plain objects in the game's draw order.
+`sceneToSvg` writes it as the SVG of `renderTfmSvg`; another backend can draw it without parsing SVG. A node is
+`{ type, ...properties, children }`; properties keep their order (they become the SVG attributes in that order, `fillOpacity` as
+`fill-opacity`, `dataRole` as `data-role`), null ones are left out, and `children` may nest arrays and hold null entries.
+
+| Type | Properties | Draws |
+|---|---|---|
+| `svg` | `width`, `height` (output pixels), `viewBox` | the root; the view box is the drawn part of the map |
+| `g` | `transform`, `clipPath`, `filter`, `data*` | its children; `transform` is a list of operations (`["translate", x, y]`, `["rotate", a]`, `["rotate", a, cx, cy]`, `["scale", sx, sy?]`), applied left to right as in SVG; `clipPath` and `filter` are ids |
+| `image` | `href`, `x`, `y`, `width`, `height`, `preserveAspectRatio`, `blend` | a picture of the game (an SVG data URI) or an external image; `blend: "overlay"` is the textures' overlay |
+| `use` | `href` (`#id` of a `symbol`), `x`, `y`, `width`, `height` | a texture tile |
+| `rect`, `circle`, `ellipse`, `path` | geometry, `fill`, `fillOpacity`, `fillRule`, `stroke`, `strokeWidth`, `strokeOpacity`, `strokeLinecap`, `strokeLinejoin`, `strokeDasharray` | shapes: placeholders, joints, labels, the room colour |
+| `text` | `text`, `fontSize`, `textAnchor`, `fill` | the type number of an object without a picture |
+| `defs` | definitions | nothing; holds `clipPath` (children: the clip shape), `symbol` (`id`, `viewBox`, `width`, `height`, children) and `filter` nodes |
+| `filter` | `id`, `region` (`x`, `y`, `width`, `height`), `effect` | `{ kind: "colorMatrix", matrix }` (20 numbers, row by row) or `{ kind: "glow", color, blurX, blurY, strength, passes, flash }` (Flash's GlowFilter) |
+| `comment` | `text` | nothing (an empty clip of the game) |
+
+A definition comes before the first node that refers to it.
+
 ## Renderer choices
 
 Where the game and the editor differ, or the game is random, the renderer has an option. Defaults: the game's picture, except

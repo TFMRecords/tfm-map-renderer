@@ -375,6 +375,13 @@ type (`ground-textures.js`, `flat`), the `F` background, the background `D` imag
 pictures are not drawn.  The client ignores the option for map mode 22 and for
 `defilante` maps; callers decide that.
 
+#### `renderTfmScene`
+
+`function renderTfmScene(map, options = {})`
+
+What `renderTfmSvg` draws, as a scene (src/render/scene.js, docs/rendering.md#scene): the root `svg` node, with the same
+options. `sceneToSvg` turns it into the SVG text; another backend can draw it directly.
+
 #### `renderedViewport`
 
 `function renderedViewport(map, options = {})`
@@ -390,6 +397,14 @@ The part of the map `renderTfmSvg` draws with these options, in map units: `view
 Size limits of the renderer (not of the game: the client has no size limit for a map loaded from XML, and saved
 maps exist with a width of 1000000000). They guard the output size in pixels (viewport x scale), so a huge
 map renders only when the caller picks a viewport/scale or raises the limit.
+
+### `src/render/scene.js`
+
+#### `sceneToSvg`
+
+`function sceneToSvg(node)`
+
+The SVG text of a scene (or of a node, or an array of nodes).
 
 ### `src/render/client-limits.js`
 

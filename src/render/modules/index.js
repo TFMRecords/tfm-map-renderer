@@ -19,12 +19,12 @@ export function resolveModuleOptions(value) {
   return out;
 }
 
-/** The overlays of every enabled module, in registry order. */
+/** The overlays of every enabled module, in registry order (scene nodes). */
 export function renderModules(map, modules, context) {
   return Object.entries(RENDER_MODULES).map(([name, render]) => {
     const data = map.modules?.[name];
     const setting = modules[name];
-    if (!data || setting === false || (setting === "auto" && !data.detected)) return "";
+    if (!data || setting === false || (setting === "auto" && !data.detected)) return null;
     return render(data, context);
-  }).join("");
+  });
 }

@@ -3,7 +3,11 @@
 ```text
 map XML --> XML parser (source-preserving AST) --> semantic map (what the XML says)
                                                         |
-                                    renderTfmSvg(map, options, asset resolver)
+                                   renderTfmScene(map, options, asset resolver)
+                                                        |
+                                         scene (rendering.md#scene)
+                                                        |
+                                 sceneToSvg = SVG (renderTfmSvg)
                                                         |
                                 SVG --> shared assets --> resvg --> PNG     (src/server, bin/tfm-render-server.mjs)
 

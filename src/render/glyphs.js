@@ -1,6 +1,5 @@
 // A tiny stroke font (digits, ".", "-", "×") for labels, drawn as paths: the server's rasteriser loads no fonts, and paths
 // render the same everywhere. Glyphs are polylines on a 4 x 6 grid, y down.
-import { attr } from "./svg-util.js";
 
 const GLYPHS = Object.freeze({
   0: [[[0, 0], [4, 0], [4, 6], [0, 6], [0, 0]]],
@@ -40,14 +39,14 @@ export function glyphWidth(text, height = 9) {
 
 /**
  * A readable label: white strokes over a dark outline. `anchor` "start", "middle" or "end" places it horizontally around `x`;
- * `y` is the vertical centre.
+ * `y` is the vertical centre. Scene nodes (src/render/scene.js): the outline path, then the stroke path; null for no glyphs.
  */
 export function glyphLabel(text, { x = 0, y = 0, height = 9, anchor = "start", color = "#ffffff", outline = "#1b1f2b" } = {}) {
   const width = glyphWidth(text, height);
   const left = anchor === "middle" ? x - width / 2 : anchor === "end" ? x - width : x;
   const d = glyphPath(text, { x: left, y: y - height / 2, height });
-  if (!d) return "";
+  if (!d) return null;
   const stroke = Math.max(1, height / 6);
-  const common = `${attr("d", d)}${attr("fill", "none")}${attr("stroke-linecap", "round")}${attr("stroke-linejoin", "round")}`;
-  return `<path${common}${attr("stroke", outline)}${attr("stroke-width", round(stroke * 2.6))}/><path${common}${attr("stroke", color)}${attr("stroke-width", round(stroke))}/>`;
+  const path = (paint, strokeWidth) => ({ type: "path", d, fill: "none", strokeLinecap: "round", strokeLinejoin: "round", stroke: paint, strokeWidth });
+  return [path(outline, round(stroke * 2.6)), path(color, round(stroke))];
 }

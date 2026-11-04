@@ -19,6 +19,9 @@ With a release it draws the game's picture: textured grounds, decorations, shama
 backgrounds, joints, the map images, mirrored rooms. Without one it draws placeholders (below). How the game stacks a map, what
 was compared with the game and where the renderer still differs are in [`../rendering.md`](../rendering.md).
 
+`renderTfmScene(map, options)` takes the same options and returns the picture as a scene, a tree of plain objects
+([`../rendering.md`](../rendering.md#scene)); `sceneToSvg(scene)` turns it into that same SVG string.
+
 ## Parser and renderer
 
 The parser returns what the XML says ([`parser.md`](parser.md)); every decision about how the game would show it is a renderer

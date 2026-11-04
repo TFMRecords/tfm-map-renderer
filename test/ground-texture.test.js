@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createTextureContext, renderTexturedGround, textureDefs, seededRandom } from "../src/render/ground-texture.js";
+import { createTextureContext, renderTexturedGround, textureDefs as textureDefNodes, seededRandom } from "../src/render/ground-texture.js";
+import { sceneToSvg } from "../src/render/scene.js";
 import { parseTfmMap } from "../src/index.js";
 import { renderTfmSvg } from "../src/render/svg.js";
 
@@ -9,7 +10,10 @@ const resolver = {
   resolve: ({ key }) => ({ key, href: `data:image/svg+xml;utf8,${encodeURIComponent(key)}`, width: key.startsWith("$T_") ? 40 : 100, height: key.startsWith("$T_") ? 40 : 100, origin: { x: 0, y: 0 } }),
 };
 const uses = (svg) => (svg.match(/<use /g) ?? []).length;
-const render = (g) => renderTexturedGround(createTextureContext(resolver, 7), { dynamic: false, tint: 0x808080, ...g });
+// The texture as SVG text: { base, strip } of renderTexturedGround are scene nodes (src/render/scene.js).
+const asSvg = (out) => out && { base: sceneToSvg(out.base), strip: sceneToSvg(out.strip) };
+const textureDefs = (ctx) => sceneToSvg(textureDefNodes(ctx));
+const render = (g) => asSvg(renderTexturedGround(createTextureContext(resolver, 7), { dynamic: false, tint: 0x808080, ...g }));
 
 test("a plain tiled ground (type 5) gets one tile per 40x40 cell", () => {
   const { base } = render({ type: 5, width: 120, height: 80 });
@@ -43,7 +47,7 @@ test("pre-rendered bitmaps for dynamic grounds, the vector clip for static ones,
 
 test("a tint becomes a colour-matrix filter, the neutral tint none, and undefined types fall back to $Sol_Dur", () => {
   const ctx = createTextureContext(resolver, 1);
-  const tinted = renderTexturedGround(ctx, { type: 5, width: 40, height: 40, dynamic: false, tint: 0xff4080 });
+  const tinted = asSvg(renderTexturedGround(ctx, { type: 5, width: 40, height: 40, dynamic: false, tint: 0xff4080 }));
   assert.match(tinted.base, /filter="url\(#tint-ff4080\)"/);
   assert.match(textureDefs(ctx), /<feColorMatrix[^>]*values="1.9922 0 0 0 0  0 0.5 0 0 0  0 0 1 0 0  0 0 0 1 0"/);
   assert.match(render({ type: 22, width: 40, height: 40 }).base, /Sol_Dur/);
@@ -84,7 +88,6 @@ test("foreground grounds (9, 15, 21 and N) are drawn above the objects and the g
 });
 
 test("interior fill tiles are backed by their first fill colour, edge tiles are not", async () => {
-  const { createTextureContext, renderTexturedGround, textureDefs } = await import("../src/render/ground-texture.js");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><path d="M0 0h40v40H0z" fill="#a32300"/></svg>`;
   const href = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
   const ctx = createTextureContext({ resolve: () => ({ href, width: 40, height: 40, origin: { x: 0, y: 0 } }) });
@@ -95,7 +98,6 @@ test("interior fill tiles are backed by their first fill colour, edge tiles are 
 });
 
 test("a translucent fill tile (the cobweb) gets no backdrop", async () => {
-  const { createTextureContext, renderTexturedGround, textureDefs } = await import("../src/render/ground-texture.js");
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><path d="M0 0h40" fill="#ffffff"/></svg>`;
   const href = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
   const ctx = createTextureContext({ resolve: () => ({ href, width: 40, height: 40, origin: { x: 0, y: 0 } }) });

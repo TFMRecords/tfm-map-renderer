@@ -67,6 +67,20 @@ test("pictures are copied in device space, through clips and colour matrices; sy
   assert.deepEqual(pixel(7, 7), [0, 0, 0, 0], "the symbol's overflow is hidden");
 });
 
+test("tiles turned 45 degrees meet without a seam where their shared edge runs through pixel centres", async () => {
+  // The edge between the two tiles is the line (5.5 - k, 2.5 + k): every pixel centre on it must go to one of them.
+  const { pixel } = await draw(svg([
+    { type: "defs", children: [
+      { type: "symbol", id: "t", viewBox: "0 0 2 6", width: 2, height: 6, overflow: "hidden", children: [{ type: "rect", width: 2, height: 6, fill: "#00ff00" }] },
+    ] },
+    { type: "g", transform: [["translate", 5.5, 2.5], ["rotate", 45]], children: [
+      { type: "use", href: "#t", x: -2, y: 0, width: 2, height: 6 },
+      { type: "use", href: "#t", x: 0, y: 0, width: 2, height: 6 },
+    ] },
+  ]));
+  for (const [x, y] of [[4, 3], [3, 4], [2, 5], [1, 6]]) assert.deepEqual(pixel(x, y), [0, 255, 0, 255], `pixel ${x},${y}`);
+});
+
 test("what the compositor cannot draw is counted; text is left out as resvg without fonts does", async () => {
   const { unsupported, pixel } = await draw(svg([{ type: "path", d: "M0 0C5 5 5 5 9 9", stroke: "#000" }, { type: "text", text: "1", fill: "#000" }]));
   assert.deepEqual(unsupported, { "path curve": 1 });

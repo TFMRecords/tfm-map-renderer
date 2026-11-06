@@ -176,7 +176,7 @@ export function flattenScene(scene, { width, height, fit = "meet" } = {}) {
         let useClips = clips, useBox = box;
         if (symbol.overflow === "hidden") {
           const clip = rectClip(um, sx, sy, sw, sh);
-          useClips = [...clips, ...clip.edges.map((e) => ({ ...e, hard: true }))];
+          useClips = [...clips, ...clip.edges.map((e) => ({ ...e, hard: true, owns: ownsTie(e) }))];
           useBox = clip.box && intersect(box, clip.box);
           if (!useBox) return;
         }
@@ -293,12 +293,18 @@ export function flattenScene(scene, { width, height, fit = "meet" } = {}) {
 // --- Drawing into a target: { data: Float32Array premultiplied RGBA, x0, y0, x1, y1 } (device pixels; data holds the rows
 // y0..y1 of the columns x0..x1).
 
+// A pixel centre on a hard edge (within rounding: the two tiles' matrices differ in the last bits) goes to exactly one side:
+// the one whose inward normal points right, or down on a level edge. Without it a 45 degree ground whose tile edges run through
+// pixel centres loses those pixels to both tiles, and the background shows through as a hairline.
+const HARD_TIE = 1e-7;
+const ownsTie = (e) => e.a > 1e-12 || (Math.abs(e.a) <= 1e-12 && e.b > 0);
+
 function clipCoverage(clips, X, Y) {
   let c = 1;
   for (let i = 0; i < clips.length; i++) {
     const e = clips[i];
     const d = e.a * X + e.b * Y + e.c + 0.5;
-    if (e.hard) { if (d <= 0.5) return 0; continue; }
+    if (e.hard) { if (d < 0.5 - HARD_TIE || (d <= 0.5 + HARD_TIE && !e.owns)) return 0; continue; }
     if (d <= 0) return 0;
     if (d < 1) c *= d;
   }
@@ -483,7 +489,8 @@ function drawShape(op, target) {
         if (cover <= 0) continue;
         if (cover > 1) cover = 1;
       } else if (op.hard) {
-        if (u < op.x || u >= op.x + op.w || v < op.y || v >= op.y + op.h) continue;
+        // Within rounding of the rectangle counts as in: the tile's hard clip decides who owns a pixel on a shared edge.
+        if (u < op.x - HARD_TIE || u > op.x + op.w + HARD_TIE || v < op.y - HARD_TIE || v > op.y + op.h + HARD_TIE) continue;
         cover = 1;
       } else {
         const cu = Math.min((u - op.x) * sx + 0.5, (op.x + op.w - u) * sx + 0.5);

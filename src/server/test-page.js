@@ -38,6 +38,8 @@ export const OPTION_HELP = Object.freeze({
   compositeRandomBackground: ["Game", "true", "F=-2 drawn as a strip of each candidate background; false picks one"],
   randomBackgroundIndex: ["Game", "", "which candidate F=-2 picks when not composite"],
   randomDecorationFlip: ["Game", "false", "decorations with flip code 2 flip by a seeded coin"],
+  defilanteMarkers: ["Game", "true", "the markers of defilante maps (objects 6, 32, 15, 16)"],
+  defilanteBonus: ["Game", "plus", "marker 6: plus (+1) or heart (maps by Transformice outside category 18)"],
   objectPlaceholders: ["Editor", "true", "a dashed placeholder for objects without a picture"],
   spawnMarkers: ["Editor", "editor", "editor (the editor's spawn pictures; circles without the asset release), circles or none (the game)"],
   debugMarkers: ["Editor", "false", "outlines at every decoration and object position"],

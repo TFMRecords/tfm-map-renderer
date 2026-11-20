@@ -129,6 +129,8 @@ components:
         compositeRandomBackground: { type: boolean }
         randomBackgroundIndex: { type: number }
         randomDecorationFlip: { type: boolean }
+        defilanteMarkers: { type: boolean }
+        defilanteBonus: { type: string, enum: [plus, heart] }
         textures: { type: boolean }
         textureSeed: { type: number }
         pregeneratedBitmaps: { type: boolean }

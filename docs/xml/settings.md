@@ -108,7 +108,20 @@ The `DS` decoration ([`decorations.md`](decorations.md)) places a single spawn p
 table for the arithmetic. In defilante mode:
 
 - the shaman objects 6, 32, 15 and 16 are not created as objects but become markers of kind 0, 1, 2 and 3 (the raw `C` is
-  compared, so skins of these types are not markers);
+  compared, so skins of these types are not markers). The game draws each marker as a 30 x 30 picture from
+  `http://www.transformice.com/images/`, centred on the whole-number `X`, `Y`, in the top layer after the foreground
+  decorations and before the `APS` images. In a mirrored map only the point moves, the picture is not flipped:
+
+  | `C` | Kind | Picture | What it does |
+  |---|---|---|---|
+  | 6 | 0 | `defilante_plus.png` (+1); `defilante_coeur.png` (a heart) on maps by the author `Transformice` outside category 18 | bonus |
+  | 32 | 1 | `defilante_vitesse.png` (lightning) | speed boost |
+  | 15 | 2 | `defilante_mort.png` (skull) | death |
+  | 16 | 3 | `defilante_saut.png` (spring) | jump boost |
+
+  The renderer draws them by default (`defilanteMarkers: false` leaves them out). The author and category are not in the
+  XML, so kind 0 is the `+1`; `defilanteBonus: "heart"` draws the heart. Verified with game screenshots: kinds 1 to 3 on map
+  7983427, kind 0 (`+1`) in the editor;
 - the width limit of a restricted map is 4800 instead of 1600;
 - minimalist mode is off.
 

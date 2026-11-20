@@ -7,6 +7,6 @@ export const DRAW_ORDER = Object.freeze([
   { layer: "grounds", contents: "joint lines that are not in the foreground, every ground (with the galaxy strip behind its ground), then the foreground holes (`D` on `T`)", verified: true },
   { layer: "mice", contents: "the mice and the arrow (object 0); the renderer draws no mice", verified: true },
   { layer: "objects", contents: "shaman objects, the foreground cheese (`D` on `F`)", verified: true },
-  { layer: "top", contents: "foreground joint lines, foreground `d` images (first), foreground grounds (`N`; types 9, 15, 21), foreground decorations, `APS` images, the soulmate heart", verified: true },
+  { layer: "top", contents: "foreground joint lines, foreground `d` images (first), foreground grounds (`N`; types 9, 15, 21), foreground decorations, the defilante markers, `APS` images, the soulmate heart", verified: true },
   { layer: "screen", contents: "the `Ca` frame, over everything and never mirrored", verified: false },
 ]);

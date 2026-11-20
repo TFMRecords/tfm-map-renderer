@@ -774,6 +774,9 @@ function assertWithinLimits(width, height, limits) {
  * map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
  * `parkourNails: false` leaves out the checkpoint nail the parkour overlay draws over each checkpoint mouse (on by default, as in Miceditor).
  * `parkourStyle` sets the tint of `stop` checkpoints and the height and colours of the checkpoint number and size labels (`resolveParkourStyle` in modules/parkour.js).
+ * Defilante markers (objects 6, 32, 15 and 16 of a `defilante` map) are drawn as the game's 30 x 30 pictures, asked of the resolver by file name
+ * as `standard` images (`defilante_plus.png`, ...; the server fetches them like `D` images), or as rings without them; `defilanteMarkers: false`
+ * leaves them out and `defilanteBonus: "heart"` draws marker 6 as the heart of official maps instead of the `+1`.
  * `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
  * type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
  * pictures are not drawn.  The client ignores the option for map mode 22 and for
@@ -865,6 +868,7 @@ function mapBody(map, options, { clientLimits = resolveClientLimits(options.clie
     renderDImages(map.settings.images?.foreground, resolver, "foreground", mapWidth, mapHeight, false, restricted, tiled, options.mirrorX === true, visible),
     grounds.foreground,
     decorationParts(map, resolver, options.resolveDecorationAsset, { foreground: true, random: decorationRandom, minimalist: options.minimalist === true, randomFlip: options.randomDecorationFlip === true, visible }),
+    options.defilanteMarkers === false ? null : renderDefilanteMarkers(map, resolver, { bonus: options.defilanteBonus === "heart" ? "heart" : "plus", mirrored: options.mirrorX === true, placeholder: defaults, visible }),
     restricted ? null : renderApsImages(map.settings.images?.disappearing, resolver, "aps", visible),
     // Lua module overlays (parkour checkpoints, ...): annotations over the map, not something the game draws.
     renderModules(map, modules, { resolver, mirrored: options.mirrorX === true, map, nails: options.parkourNails !== false, parkourStyle: options.parkourStyle, visible }),
@@ -881,6 +885,34 @@ function renderSoulmateClip(resolver, visible = ALL) {
   const asset = resolveImage(resolver, "$P5", "sprite", { key: "$P5" });
   if (!asset || !visible(assetBox(asset, 12, 30))) return null;
   return group({ transform: [["translate", 12, 30]] }, imageNode(asset, -(asset.origin?.x ?? 0), -(asset.origin?.y ?? 0)));
+}
+
+/**
+ * Defilante markers (docs/xml/settings.md#defilante): the game draws each one as a 30 x 30 picture from its image host
+ * (`http://www.transformice.com/images/`, the `D` rule) centred on the marker, in the top layer after the foreground decorations
+ * and before the `APS` images. Kind 0 is the `+1` bonus, or a heart on maps by the author `Transformice` outside category 18
+ * (`bonus: "heart"`; the author and category are not in the XML). In a mirrored map only the point moves; the picture is not
+ * flipped. Without the picture, `placeholder` draws a ring in its place.
+ */
+const DEFILANTE_PICTURES = Object.freeze(["defilante_plus.png", "defilante_vitesse.png", "defilante_mort.png", "defilante_saut.png"]);
+const DEFILANTE_SIZE = 30;
+
+function renderDefilanteMarkers(map, resolver, { bonus = "plus", mirrored = false, placeholder = true, visible = ALL } = {}) {
+  const half = DEFILANTE_SIZE / 2;
+  return (map.objects ?? []).map((object) => {
+    const kind = object.defilanteMarker;
+    if (kind == null || !DEFILANTE_PICTURES[kind]) return null;
+    const x = finiteOr(object.x, 0), y = finiteOr(object.y, 0);
+    if (!visible({ x: -half, y: -half, width: DEFILANTE_SIZE, height: DEFILANTE_SIZE }, { x, y })) return null;
+    const url = kind === 0 && bonus === "heart" ? "defilante_coeur.png" : DEFILANTE_PICTURES[kind];
+    const asset = resolveImage(resolver, url, "standard", { record: { url, x: x - half, y: y - half }, layer: "defilante", defilanteMarker: kind });
+    const picture = asset
+      ? imageNode(asset, -half, -half, { width: DEFILANTE_SIZE, height: DEFILANTE_SIZE, preserveAspectRatio: "none" })
+      : placeholder ? { type: "circle", cx: 0, cy: 0, r: half - 2, fill: "none", stroke: "#e0a526", strokeWidth: 3, dataKind: `defilante-${kind}` } : null;
+    if (!picture) return null;
+    // The whole map is flipped when mirrored; flip the picture back so it reads as in the game.
+    return group({ transform: mirrored ? [["translate", x, y], ["scale", -1, 1]] : [["translate", x, y]] }, picture);
+  });
 }
 
 function renderMapImageRecords(records, resolver, visible = ALL) {

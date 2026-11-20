@@ -374,6 +374,9 @@ Joints with a style (`c`) are drawn as the client draws them (`renderJoints: fal
 map: its checkpoints, their size, cheese and stop), `true` to force, `false` to hide; `modules: false` hides all.
 `parkourNails: false` leaves out the checkpoint nail the parkour overlay draws over each checkpoint mouse (on by default, as in Miceditor).
 `parkourStyle` sets the tint of `stop` checkpoints and the height and colours of the checkpoint number and size labels (`resolveParkourStyle` in modules/parkour.js).
+Defilante markers (objects 6, 32, 15 and 16 of a `defilante` map) are drawn as the game's 30 x 30 pictures, asked of the resolver by file name
+as `standard` images (`defilante_plus.png`, ...; the server fetches them like `D` images), or as rings without them; `defilanteMarkers: false`
+leaves them out and `defilanteBonus: "heart"` draws marker 6 as the heart of official maps instead of the `+1`.
 `minimalist: true` reproduces the client's minimalist mode (user option 14): grounds are the client's flat colours per
 type (`ground-textures.js`, `flat`), the `F` background, the background `D` images (the `#` tiled bitmap stays) and the `$P_` decoration
 pictures are not drawn.  The client ignores the option for map mode 22 and for

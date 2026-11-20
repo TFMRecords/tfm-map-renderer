@@ -15,13 +15,13 @@ The game stacks a map in these layers. Inside a layer, things are drawn in map o
 | 3. grounds | joint lines that are not in the foreground, every ground (with the galaxy strip behind its ground), then the foreground holes (`D` on `T`) | yes |
 | 4. mice | the mice and the arrow (object 0); the renderer draws no mice | yes |
 | 5. objects | shaman objects, the foreground cheese (`D` on `F`) | yes |
-| 6. top | foreground joint lines, foreground `d` images (first), foreground grounds (`N`; types 9, 15, 21), foreground decorations, `APS` images, the soulmate heart | yes |
+| 6. top | foreground joint lines, foreground `d` images (first), foreground grounds (`N`; types 9, 15, 21), foreground decorations, the defilante markers, `APS` images, the soulmate heart | yes |
 | 7. screen | the `Ca` frame, over everything and never mirrored | no |
 <!-- END:draw-order -->
 
 The renderer follows this order: room colour, background `F`, background `D` images, the background layer in map order,
 `ARPS` and `IP` images (only on request), joints behind the grounds, grounds and foreground holes, objects and foreground cheese,
-foreground joints, foreground `d` images, foreground grounds, foreground decorations, `APS` images, the soulmate heart (on
+foreground joints, foreground `d` images, foreground grounds, foreground decorations, defilante markers, `APS` images, the soulmate heart (on
 request), the `Ca` frame (on request). Verified in the game: a hole or cheese without `D` is hidden by a ground over it,
 foreground holes are over the grounds, the top strip of a galaxy is behind the mice, and the layers of the images were checked
 with `test/maps/images-1.xml` and `images-2.xml`.

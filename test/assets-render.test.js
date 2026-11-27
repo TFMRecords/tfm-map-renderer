@@ -139,25 +139,31 @@ test("SVG renderer uses map defaults, source images and explicit mirror transfor
 });
 
 test("SVG renderer draws grounds centred and rotated, with built-in placeholders when no assets exist", () => {
-  const map = parseTfmMap(`<C><P/><Z><S><S T="12" X="100" Y="50" L="40" H="20" P="0,0,0.3,0.2,30,0,0,0" o="ff0000"/><S T="13" X="200" Y="60" L="15" H="1" o="ffffff"/><S T="13" X="250" Y="60" L="15"/><S T="12" X="250" Y="90" L="10" H="10" o=""/><S T="13" X="250" Y="120" L="10" o="ffffffff"/><S T="0" X="300" Y="70" L="10" H="10" m=""/></S><D><DS X="1" Y="2"/><F X="3" Y="4"/><T X="5" Y="6" CT="1"/></D><O/></Z></C>`);
+  const map = parseTfmMap(`<C><P/><Z><S><S T="12" X="100" Y="50" L="40" H="20" P="0,0,0.3,0.2,30,0,0,0" o="ff0000"/><S T="13" X="200" Y="60" L="15" H="1" o="ffffff"/><S T="13" X="250" Y="60" L="15"/><S T="12" X="250" Y="90" L="10" H="10" o=""/><S T="13" X="250" Y="120" L="10" o="ffffffff"/><S T="0" X="300" Y="70" L="10" H="10" m=""/><S T="14" X="350" Y="70" L="10" H="10"/></S><D><DS X="1" Y="2"/><F X="3" Y="4"/><T X="5" Y="6" CT="1"/></D><O/></Z></C>`);
   const svg = renderTfmSvg(map);
   assert.match(svg, /<g data-type="12" transform="translate\(100 50\) rotate\(30\)"><rect x="-20" y="-10" width="40" height="20" fill="#ff0000"\/>/);
   assert.match(svg, /<g data-type="13" transform="translate\(200 60\)"><circle r="15" fill="#ffffff"\/>/);
   assert.doesNotMatch(svg, /translate\(250 /, "a rectangle or circle without `o` (or with an empty one, or ffffffff) is not drawn");
   assert.equal(renderTfmSvg(map, { minimalist: true }).includes("translate(250 "), false, "nor in minimalist mode");
+  // Seen in the game: only the last six hex digits are the colour, and -1 is the only value that hides the ground.
+  const wide = renderTfmSvg(parseTfmMap(`<C><P/><Z><S>${["01ff0000", "80ff0000", "1000000"].map((o, i) => `<S T="12" X="${100 * (i + 1)}" Y="50" L="10" H="10" o="${o}"/>`).join("")}</S></Z></C>`));
+  assert.deepEqual([...wide.matchAll(/data-type="12"[^>]*><rect [^>]*fill="([^"]*)"/g)].map((m) => m[1]), ["#ff0000", "#ff0000", "#000000"]);
   const shown = renderTfmSvg(map, { invisibleGrounds: "translucent" });
   assert.match(shown, /<filter id="invisible-ground"/);
   assert.match(shown, /<g data-type="13" transform="translate\(250 60\)" filter="url\(#invisible-ground\)"><circle r="15" fill="#000000"\/>/, "black by default, as in Miceditor");
   assert.match(shown, /<g data-type="12" transform="translate\(250 90\)" filter="url\(#invisible-ground\)"><rect [^>]*fill="#000000"\/>/);
   assert.match(shown, /<g data-type="13" transform="translate\(250 120\)" filter="url\(#invisible-ground\)">/);
   assert.match(shown, /<g data-type="0" transform="translate\(300 70\)" filter="url\(#invisible-ground\)">/, "an m ground is drawn as usual, at half opacity");
+  assert.match(shown, /<g data-type="14" transform="translate\(350 70\)" filter="url\(#invisible-ground\)"><rect [^>]*fill="#000000"\/>/);
   assert.doesNotMatch(shown, /translate\(200 60\)" filter/, "a visible ground is untouched");
   assert.match(renderTfmSvg(map, { invisibleGrounds: "translucent", invisibleGroundColor: "#f0f" }), /translate\(250 60\)" filter="url\(#invisible-ground\)"><circle r="15" fill="#f0f"\/>/);
   assert.match(renderTfmSvg(map, { invisibleGrounds: "translucent", invisibleGroundColor: "red\"/>" }), /translate\(250 60\)" filter="url\(#invisible-ground\)"><circle r="15" fill="#000000"\/>/, "a colour that is not #rgb or #rrggbb is black");
   const editor = renderTfmSvg(map, { invisibleGrounds: "editor" });
   assert.match(editor, /<g data-type="13" transform="translate\(250 60\)"><circle r="15" fill="#000000"\/>/, "the map editor shows a 12 or 13 with no `o` black");
   assert.match(editor, /<g data-type="12" transform="translate\(250 90\)"><rect [^>]*fill="#000000"\/>/, "and with an empty one");
-  assert.doesNotMatch(editor, /invisible-ground|translate\(250 120\)|data-type="0"/, "the cases not checked in the editor stay as in the game");
+  assert.doesNotMatch(editor, /invisible-ground|translate\(250 120\)/, "a colour of -1 is not drawn in the editor either");
+  assert.match(editor, /<g data-type="0" transform="translate\(300 70\)">/, "the editor draws an m ground as usual");
+  assert.match(editor, /<g data-type="14" transform="translate\(350 70\)"><rect [^>]*fill="#937050"\/>/, "and type 14 as the plank (here its placeholder)");
   assert.doesNotMatch(svg, /data-type="0"/, "an invisible (m) ground has no graphic");
   assert.match(svg, /data-role="mouse-spawn"/);
   assert.match(svg, /data-role="cheese"/);

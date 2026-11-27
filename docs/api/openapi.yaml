@@ -141,7 +141,7 @@ components:
         rotation: { type: number }
         borders: { type: string, enum: [none, map, all] }
         debugMarkers: { type: boolean }
-        invisibleGrounds: { type: string, enum: [hidden, translucent, editor], default: hidden, description: "The grounds the game does not draw (m, type 14, 12 and 13 without o): hidden as in the game, translucent (half opacity, as in Miceditor) or as the map editor shows them (12 and 13 with no or an empty o black)." }
+        invisibleGrounds: { type: string, enum: [hidden, translucent, editor], default: hidden, description: "The grounds the game does not draw (m, type 14, 12 and 13 without o): hidden as in the game, translucent (half opacity, as in Miceditor) or as the map editor shows them (m grounds as usual, type 14 as the plank, 12 and 13 with no or an empty o black)." }
         invisibleGroundColor: { type: string, pattern: "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", default: "#000000", description: "With translucent: the colour of type 14 and of 12 and 13 without o." }
         jointAngles: { type: boolean, default: true, description: "Grounds turned by a prismatic joint (JP with A, Miceditor's boosters) are drawn at that angle; false keeps the XML rotation." }
         fitContent: { type: boolean, default: false, description: "Without viewport: draw everything on the map and nothing more, whatever the map's size (the viewport can start left of or above 0, 0)." }

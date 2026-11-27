@@ -78,8 +78,8 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 <!-- BEGIN:status-summary -->
 | Status | Attributes |
 |---|---|
-| verified | 64 |
-| unverified | 30 |
+| verified | 65 |
+| unverified | 29 |
 | extension | 5 |
 | **total** | **99** |
 <!-- END:status-summary -->
@@ -88,7 +88,7 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 
 <!-- BEGIN:unverified -->
 - [`P.aie`](settings.md#attr-P-aie): What the game does with the flag has not been checked; the meaning is the community documentation's.
-- [`P.N`](settings.md#attr-P-N): Whether the first number is a radius or a diameter, and what the second number selects, have not been checked in the game.
+- [`P.N`](settings.md#attr-P-N): What the second number selects has only been seen for 0 (the shaman was in the dark too).
 - [`P.C`](settings.md#attr-P-C): The effect has not been checked in the game; the meaning is the community documentation's.
 - [`P.P`](settings.md#attr-P-P): The effect has not been checked in the game; the meaning is the community documentation's.
 - [`S.target`](grounds.md#attr-S-target): The game stores the value; what uses it has not been seen.
@@ -112,7 +112,6 @@ The **spec id** of an attribute is its element and name: `P.G` (settings `G`), `
 - [`D/P.P`](decorations.md#decorations-p): The random flip follows the game's code; being random, it cannot be compared with the game.
 - [`L/JD.HZ`](joints.md#attr-L-JD-HZ): Sources disagree on the name: a third-party editor calls it frequency, the community documentation damping or tautness.
 - [`L/JD.AMP`](joints.md#attr-L-JD-AMP): Sources disagree on the name: a third-party editor calls it damping, the community documentation elasticity.
-- [`L/*.c`](joints.md#style-c): That a child which is not a joint styles the previous joint follows the game's code; it has not been checked in the game.
 - [`L/*.lua`](joints.md#attr-L-any-lua): That a child which is not a joint changes the previous joint follows the game's code; it has not been checked in the game.
 - [`particles/*.loop`](particles.md#how-the-game-emits-particles): The code that uses the flag is not known; the emitter itself never stops either way.
 - [`particles/*.sp`](particles.md#how-the-game-emits-particles): The load failure follows the game's code; no map with particles has been checked in the game.

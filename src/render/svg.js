@@ -372,21 +372,25 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
   const strips = [];
   let ghosts = false;
   for (const ground of map.grounds ?? []) {
+    const editor = invisible.mode === "editor";
+    // The map editor shows type 14 like the undefined types, the `$Sol_Dur` plank (seen in the editor); 16 has no recipe either.
+    const drawType = editor && ground.type === 14 ? 16 : ground.type;
     // Minimalist mode only replaces the types that have a flat colour; the others (16, 22 and above) are drawn as usual (verified in the game).
-    const flat = minimalist && Boolean(GROUND_TEXTURE_RECIPES[ground.type]?.flat);
+    const flat = minimalist && Boolean(GROUND_TEXTURE_RECIPES[drawType]?.flat);
     // `i` replaces the ground's own drawing (verified in the game, #Module room); for a restricted map `i` is ignored and the texture is drawn.
     const replaced = !restricted && Boolean(ground.imageParts?.url);
     const g = groundGeometry(ground);
     // A colour of -1 (`o="ffffffff"`) is no colour, as when `o` is absent (spec: S.o).
     const own = ground.color != null && ground.color !== -1 ? colorToHex(ground.color) : null;
     // Not drawn by the game: `m` (spec: S.m), type 14, and a rectangle or circle without a colour (spec: S.o). "translucent" draws an
-    // `m` ground as usual and the other two in `invisibleGroundColor`, all at half opacity. "editor" draws a rectangle or circle with no
-    // or an empty `o` black, as the map editor does (seen in the editor); the rest stays as in the game until checked in the editor.
+    // `m` ground as usual and the other two in `invisibleGroundColor`, all at half opacity. "editor" is what the map editor shows (seen
+    // in the editor): an `m` ground as usual, type 14 as the plank, a rectangle or circle with no or an empty `o` black, and one with a
+    // colour of -1 not at all.
     const colourless = (ground.type === 12 || ground.type === 13) && own == null;
     const blank = ground.type === 14 || colourless;
     const ghost = invisible.mode === "translucent" && (Boolean(ground.invisible) || blank);
-    const editorBlack = invisible.mode === "editor" && colourless && ground.color == null && !ground.invisible;
-    const hidden = ground.invisible && !ghost;
+    const editorBlack = editor && colourless && ground.color == null;
+    const hidden = ground.invisible && !ghost && !editor;
     // In a mirrored map the whole picture is flipped by an outer transform, but the game only mirrors a ground's position and rotation: its texture is never flipped
     // (verified: the edge pieces of the framed types stay on the same sides in `mirrored-3.xml`) and its picture is offset by -ceil(width / 2) instead of -floor(width / 2)
     // (docs/rendering.md#grounds). The counter-flip below cancels the outer one inside the ground, whose content is then drawn as in an unmirrored map.
@@ -404,7 +408,7 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
     // grounds get the same pieces as in a picture of the whole map.
     const textured = textures && !flat && !replaced && !hidden && !g.circle
       ? renderTexturedGround(textures, {
-        type: ground.type, width: g.width, height: g.height, tint: ground.derived?.tint ?? ground.tint ?? 0x808080,
+        type: drawType, width: g.width, height: g.height, tint: ground.derived?.tint ?? ground.tint ?? 0x808080,
         dynamic: Boolean(ground.derived?.physics?.dynamic ?? ground.physics?.dynamic), pregeneratedForced,
         cell: shown ? (col, row) => visible({ x: ox + col * TILE_SIZE, y: oy + row * TILE_SIZE, width: TILE_SIZE, height: TILE_SIZE }, place) : () => false,
       })
@@ -415,7 +419,7 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
       shape = group({ transform: [["translate", ox, oy]] }, textured.base);
       if (textured.strip) strips.push(group({ dataType: ground.type, transform, filter: ghost ? INVISIBLE_GROUND_FILTER.id : null }, group({ transform: [["translate", -g.width / 2, -g.height / 2]] }, textured.strip)));
     } else {
-      const style = (flat && minimalistStyle(ground, own)) || groundStyle(ground.type);
+      const style = (flat && minimalistStyle(ground, own)) || groundStyle(drawType);
       // A rectangle or circle without `o` is not drawn (spec: S.o).
       const fill = replaced ? null : ghost && blank ? invisible.color : editorBlack ? "#000000"
         : defaults && !hidden ? (ground.type === 12 || ground.type === 13 ? own : style.fill) : null;

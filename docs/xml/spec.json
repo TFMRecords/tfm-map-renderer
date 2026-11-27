@@ -215,12 +215,12 @@
       "node": "P",
       "name": "N",
       "tags": null,
-      "note": "Whether the first number is a radius or a diameter, and what the second number selects, have not been checked in the game.",
+      "note": "What the second number selects has only been seen for 0 (the shaman was in the dark too).",
       "field": "settings.night",
       "type": "list<number>",
       "default": "off",
       "rule": "`presence` turns night mode on. A non-empty value is split on `,`: one field sets the size, two fields the size and the type (both `number`); any other number of fields sets neither.",
-      "meaning": "Night mode: mice only see a small circle around them. First number: the size of the circle; second: who is in the dark (0 everyone, 1 the shaman, 2 the mice). Default `150,0`.",
+      "meaning": "Night mode: mice only see a small circle around them. First number: the diameter of the circle (`N=\"100,0\"` lights about 100 px across in the game); second: who is in the dark (0 everyone, 1 the shaman, 2 the mice). Default `150,0`.",
       "status": "unverified",
       "examples": [
         [
@@ -1198,7 +1198,7 @@
       "type": "color",
       "default": "none (not drawn)",
       "rule": "`truthy`, then `hexcolor`.",
-      "meaning": "Colour of a rectangle (12) or circle (13) ground; other types ignore it. Without it, with an empty `o`, or with a value that reads as -1 (`ffffffff`) those two are not drawn in the game but still collide; the map editor shows the first two cases black.",
+      "meaning": "Colour of a rectangle (12) or circle (13) ground; other types ignore it. Without it, with an empty `o`, or with a value that reads as -1 (`ffffffff`) those two are not drawn in the game but still collide; the map editor shows the first two cases black. Only the last six hex digits are the colour (`o=\"80ff0000\"` is red, `o=\"1000000\"` black); -1 is the only value that hides the ground.",
       "status": "verified",
       "examples": [
         [
@@ -2337,13 +2337,13 @@
       "tags": [
         "any"
       ],
-      "note": "That a child which is not a joint styles the previous joint follows the game's code; it has not been checked in the game.",
+      "note": "",
       "field": "joints[].style",
       "type": "custom",
       "default": "none (the joint is invisible)",
       "rule": "`truthy`. Split on `,`: colour `hexcolor`, thickness `int` (default 1), alpha `number0` (default 1), foreground is `one` (default no). Each field is read only when the value has that many. On a child of `L` that is not a joint it applies to the previous joint.",
       "meaning": "Look of the joint line: colour, thickness, alpha 0 to 1, foreground flag. A joint without it is invisible.",
-      "status": "unverified",
+      "status": "verified",
       "examples": [
         [
           "c=\"ff0000,3,.25,1\"",

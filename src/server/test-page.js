@@ -43,7 +43,7 @@ export const OPTION_HELP = Object.freeze({
   objectPlaceholders: ["Editor", "true", "a dashed placeholder for objects without a picture"],
   spawnMarkers: ["Editor", "editor", "editor (the editor's spawn pictures; circles without the asset release), circles or none (the game)"],
   debugMarkers: ["Editor", "false", "outlines at every decoration and object position"],
-  invisibleGrounds: ["Editor", "hidden", "grounds the game does not draw (m, type 14, 12 and 13 without o): hidden (the game), translucent (half opacity, as in Miceditor) or editor (12 and 13 with no o black, as the map editor)"],
+  invisibleGrounds: ["Editor", "hidden", "grounds the game does not draw (m, type 14, 12 and 13 without o): hidden (the game), translucent (half opacity, as in Miceditor) or editor (as the map editor: m grounds as usual, type 14 as the plank, 12 and 13 with no o black)"],
   invisibleGroundColor: ["Editor", "#000000", "translucent: the colour of type 14 and of 12 and 13 without o (#rgb or #rrggbb)"],
   renderJoints: ["Editor", "true", "joints that have a style c"],
   jointAngles: ["Game", "true", "grounds a prismatic joint (JP A, Miceditor's boosters) turns, drawn at that angle; false: the XML rotation"],

@@ -7,6 +7,7 @@
 
 import { defs as defsNode, group } from "./scene.js";
 import { DEFAULT_GROUND_SYMBOL, GROUND_TEXTURE_RECIPES, PREGENERATED_SYMBOLS, TILE_SIZE, isPregenerated, tileSymbol } from "./ground-textures.js";
+import { bakeNonScalingStrokes } from "./non-scaling-stroke.js";
 
 const num = (v) => (Number.isInteger(v) ? v : Math.round(v * 1e4) / 1e4);
 
@@ -149,6 +150,27 @@ function tintFilter(ctx, tint) {
   return id;
 }
 
+// Per asset: its SVG text when it has lines Flash does not scale (null otherwise), and its rewritten href per placement size.
+const STRETCHED = new WeakMap();
+
+/** The asset's href for a picture `width` x `height`: its own, or one with its non-scaling lines kept as wide as in Flash (non-scaling-stroke.js). */
+function stretchedHref(a, width, height) {
+  let entry = STRETCHED.get(a);
+  if (!entry) {
+    const m = /^data:image\/svg\+xml;base64,(.*)$/.exec(a.href ?? "");
+    const svg = m ? Buffer.from(m[1], "base64").toString("utf8") : "";
+    entry = { svg: svg.includes("non-scaling-stroke") ? svg : null, sizes: new Map() };
+    STRETCHED.set(a, entry);
+  }
+  if (!entry.svg) return a.href;
+  const key = `${width}x${height}`;
+  if (!entry.sizes.has(key)) {
+    const baked = bakeNonScalingStrokes(entry.svg, width, height);
+    entry.sizes.set(key, baked ? `data:image/svg+xml;base64,${Buffer.from(baked).toString("base64")}` : a.href);
+  }
+  return entry.sizes.get(key);
+}
+
 function stretched(a, x, y, boxWidth, boxHeight, blend) {
   const bw = a.width ?? boxWidth;
   const bh = a.height ?? boxHeight;
@@ -156,7 +178,7 @@ function stretched(a, x, y, boxWidth, boxHeight, blend) {
   const sy = boxHeight / bh;
   const ox = -(a.origin?.x ?? 0) * sx;
   const oy = -(a.origin?.y ?? 0) * sy;
-  return { type: "image", href: a.href, x: num(x + ox), y: num(y + oy), width: num(boxWidth), height: num(boxHeight), preserveAspectRatio: "none", blend };
+  return { type: "image", href: stretchedHref(a, num(boxWidth), num(boxHeight)), x: num(x + ox), y: num(y + oy), width: num(boxWidth), height: num(boxHeight), preserveAspectRatio: "none", blend };
 }
 
 /** The pre-rendered 400x400 ("S") or 100x100 ("S2", under 20 px) bitmap of `$Sol_*`, stretched to the ground. */

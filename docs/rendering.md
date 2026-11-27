@@ -37,6 +37,10 @@ The room colour is `#6A7495` (only Lua can change it; `backgroundColor` sets it,
   and, for types 0, 1, 2 and 4, a vector picture.
 - Types 12 and 13 are plain colours (`o`; without it they are not drawn), 14 is invisible, 16 and the undefined types are the plain plank
   `$Sol_Dur` stretched.
+- The stretched clips (`$Sol_Dur`, `$Glacon`, `$Sol_Chocolat`, `$Transparent` and their dynamic versions) have outlines and
+  grain lines that Flash draws without scaling, so they stay 1 or 2 px wide on any ground. resvg ignores the SVG mark for
+  such lines (`vector-effect="non-scaling-stroke"`), so the renderer rewrites the clip for each ground size with those lines
+  already in pixels (`src/render/non-scaling-stroke.js`).
 - `tint` applies a colour transform: each channel multiplied by the tint's channel / 128.
 - The galaxy (21) has a strip along its top row, drawn behind the mice; it shows through the transparent top of the galaxy
   picture.

@@ -56,6 +56,8 @@ and the server's list in step.
 | `objectPlaceholders` [true] | a dashed placeholder for objects without a picture (editor mode) |
 | `spawnMarkers` ["editor"] | `"editor"` (the editor's spawn pictures; circles when the resolver has none, as without a release), `"circles"` or `"none"` (the game) |
 | `debugMarkers` [false] | outlines at every decoration and object position |
+| `invisibleGrounds` ["hidden"] | the grounds the game does not draw (`m`, type 14, a 12 or 13 without a colour): `"hidden"` as in the game; `"translucent"` at half opacity, as Miceditor's toggle does (an `m` ground as usual, the others in `invisibleGroundColor`); `"editor"` as the map editor shows them: a 12 or 13 with no or an empty `o` black (the other cases are not checked in the editor yet and stay hidden) |
+| `invisibleGroundColor` ["#000000"] | with `"translucent"`, the colour of type 14 and of a 12 or 13 without a colour (`#rgb` or `#rrggbb`; anything else is black) |
 | `cheeseSuffix` [""] | an event suffix for the cheese picture ([`decorations.md`](../xml/decorations.md#holes-and-cheese)) |
 | `flashBlur` [true] | Flash's box blurs for the hole glows; `false` uses a Gaussian blur |
 | `compositeRandomBackground` [true] | `F="-2"` drawn as a strip of each candidate background; `false` picks one |

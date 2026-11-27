@@ -22,7 +22,7 @@ export const DEFAULT_GROUND_STYLES = Object.freeze({
   9: { name: "water", fill: "#6bffee", opacity: 0.46 },
   10: { name: "stone", fill: "#5d584c" },
   11: { name: "snow", fill: "#655c3c", top: { fill: "#f4f2f1", height: 13 } },
-  12: { name: "rectangle", fill: "#ffffff" }, // white when `o` is absent, as in the game
+  12: { name: "rectangle", fill: "#ffffff" }, // the renderer draws 12 and 13 only with `o` (spec: S.o)
   13: { name: "circle", fill: "#ffffff" },
   14: { name: "invisible", fill: null },
   15: { name: "cobweb", fill: "#fefeff", opacity: 0.4 },

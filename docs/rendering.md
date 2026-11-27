@@ -35,7 +35,7 @@ The room colour is `#6A7495` (only Lua can change it; `backgroundColor` sets it,
 - The game uses a pre-rendered 400 x 400 bitmap (100 x 100 under 20 px) instead of tiles for a dynamic ground, a ground over
   1400 px, and in slow mode or on mobile. A static ground drawn from tiles also gets the `$E_1` overlay (blend mode overlay)
   and, for types 0, 1, 2 and 4, a vector picture.
-- Types 12 and 13 are plain colours (`o`, white without it), 14 is invisible, 16 and the undefined types are the plain plank
+- Types 12 and 13 are plain colours (`o`; without it they are not drawn), 14 is invisible, 16 and the undefined types are the plain plank
   `$Sol_Dur` stretched.
 - `tint` applies a colour transform: each channel multiplied by the tint's channel / 128.
 - The galaxy (21) has a strip along its top row, drawn behind the mice; it shows through the transparent top of the galaxy

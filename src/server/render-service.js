@@ -15,7 +15,7 @@ export const ALLOWED_OPTIONS = Object.freeze({
   renderJoints: "boolean", renderAppearingImages: "boolean", renderIpImages: "boolean", renderSoulmateHeart: "boolean", renderHideOffscreenFrame: "boolean",
   renderTiledBackgrounds: "boolean", compositeRandomBackground: "boolean", randomBackgroundIndex: "number", randomDecorationFlip: "boolean",
   textures: "boolean", textureSeed: "number", pregeneratedBitmaps: "boolean", cheeseSuffix: "string", defaultAssets: "boolean", flashBlur: "boolean",
-  scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", viewport: "viewport", fitContent: "boolean", jointAngles: "boolean",
+  scale: "number", rotation: "number", borders: ["none", "map", "all"], debugMarkers: "boolean", invisibleGrounds: ["hidden", "translucent", "editor"], invisibleGroundColor: "color", viewport: "viewport", fitContent: "boolean", jointAngles: "boolean",
   modules: "modules", parkourNails: "boolean", parkourStyle: "parkour-style", defilanteMarkers: "boolean", defilanteBonus: ["plus", "heart"],
 });
 /** Short names accepted at the top level of the request (the miceditor-map-preview style): `mirror` is `options.mirrorX`. */
@@ -38,6 +38,7 @@ function checkOption(name, value) {
     : rule === "boolean" ? typeof value === "boolean"
     : rule === "number" ? typeof value === "number" && Number.isFinite(value)
     : rule === "string" ? typeof value === "string" && value.length <= 64
+    : rule === "color" ? typeof value === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value)
     : rule === "string-or-null" ? value === null || (typeof value === "string" && value.length <= 64)
     : rule === "preset-or-object" ? typeof value === "string" || (value && typeof value === "object" && !Array.isArray(value))
     : rule === "viewport" ? value && typeof value === "object" && ["x", "y", "width", "height"].every((k) => value[k] === undefined || Number.isFinite(value[k]))

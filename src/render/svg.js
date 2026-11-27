@@ -265,7 +265,7 @@ function minimalistStyle(ground, own) {
   const flat = GROUND_TEXTURE_RECIPES[ground.type]?.flat;
   if (!flat) return null;
   if (flat.alpha === 0) return { fill: null };
-  const fill = flat.color === "ground" ? own ?? "#ffffff" : colorToHex(flat.color);
+  const fill = flat.color === "ground" ? own : colorToHex(flat.color);
   return { fill, ...(flat.alpha != null && flat.alpha !== 1 ? { opacity: flat.alpha } : {}) };
 }
 
@@ -352,27 +352,48 @@ function renderJoints(map) {
   return { back, front };
 }
 
-function renderGrounds(map, resolver, defaults, minimalist = false, textures = null, pregeneratedForced = false, restricted = false, mirrored = false, visible = ALL) {
+// `invisibleGrounds: "translucent"`: the grounds the game does not draw, at half opacity as in Miceditor. An alpha-only colour matrix, which resvg and the compositor both draw.
+const INVISIBLE_GROUND_FILTER = { type: "filter", id: "invisible-ground", region: { x: "-10%", y: "-10%", width: "120%", height: "120%" }, effect: { kind: "colorMatrix", matrix: [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0.5, 0] } };
+const INVISIBLE_GROUND_MODES = new Set(["hidden", "translucent", "editor"]);
+
+/** `invisibleGrounds` and `invisibleGroundColor` as `renderGrounds` takes them: an unknown mode is "hidden", a colour other than #rgb or #rrggbb is black. */
+function invisibleGroundOptions(options) {
+  const mode = INVISIBLE_GROUND_MODES.has(options.invisibleGrounds) ? options.invisibleGrounds : "hidden";
+  const color = typeof options.invisibleGroundColor === "string" && /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(options.invisibleGroundColor) ? options.invisibleGroundColor : "#000000";
+  return { mode, color };
+}
+
+function renderGrounds(map, resolver, defaults, minimalist = false, textures = null, pregeneratedForced = false, restricted = false, mirrored = false, visible = ALL, invisible = { mode: "hidden", color: "#000000" }) {
   // The game's layers, bottom to top: ... grounds, mice, objects, top (docs/rendering.md#draw-order). Grounds with the foreground
   // flag (the `N` attribute, and types 9, 15 and 21 always) go to the top layer, above the mice. The galaxy strip is added to the
   // grounds layer, so it ends up behind its own foreground ground and shows through that ground's transparent top.
   const base = [];
   const foreground = [];
   const strips = [];
+  let ghosts = false;
   for (const ground of map.grounds ?? []) {
     // Minimalist mode only replaces the types that have a flat colour; the others (16, 22 and above) are drawn as usual (verified in the game).
     const flat = minimalist && Boolean(GROUND_TEXTURE_RECIPES[ground.type]?.flat);
     // `i` replaces the ground's own drawing (verified in the game, #Module room); for a restricted map `i` is ignored and the texture is drawn.
     const replaced = !restricted && Boolean(ground.imageParts?.url);
     const g = groundGeometry(ground);
-    const own = ground.color != null ? colorToHex(ground.color) : null;
+    // A colour of -1 (`o="ffffffff"`) is no colour, as when `o` is absent (spec: S.o).
+    const own = ground.color != null && ground.color !== -1 ? colorToHex(ground.color) : null;
+    // Not drawn by the game: `m` (spec: S.m), type 14, and a rectangle or circle without a colour (spec: S.o). "translucent" draws an
+    // `m` ground as usual and the other two in `invisibleGroundColor`, all at half opacity. "editor" draws a rectangle or circle with no
+    // or an empty `o` black, as the map editor does (seen in the editor); the rest stays as in the game until checked in the editor.
+    const colourless = (ground.type === 12 || ground.type === 13) && own == null;
+    const blank = ground.type === 14 || colourless;
+    const ghost = invisible.mode === "translucent" && (Boolean(ground.invisible) || blank);
+    const editorBlack = invisible.mode === "editor" && colourless && ground.color == null && !ground.invisible;
+    const hidden = ground.invisible && !ghost;
     // In a mirrored map the whole picture is flipped by an outer transform, but the game only mirrors a ground's position and rotation: its texture is never flipped
     // (verified: the edge pieces of the framed types stay on the same sides in `mirrored-3.xml`) and its picture is offset by -ceil(width / 2) instead of -floor(width / 2)
     // (docs/rendering.md#grounds). The counter-flip below cancels the outer one inside the ground, whose content is then drawn as in an unmirrored map.
     const transform = [["translate", g.x, g.y], g.rotation ? ["rotate", g.rotation] : null, mirrored ? ["scale", -1, 1] : null].filter(Boolean);
     const ox = g.circle ? 0 : -(mirrored ? Math.ceil(g.width / 2) : Math.floor(g.width / 2));
     const oy = g.circle ? 0 : -Math.trunc(g.height / 2);
-    const image = ground.invisible || restricted ? null : renderGroundImage(ground, g, resolver, mirrored);
+    const image = hidden || restricted ? null : renderGroundImage(ground, g, resolver, mirrored);
     // A ground wholly outside the viewport is left out, and so are the texture tiles outside it (they never reach resvg: cull.js).
     const place = { x: g.x, y: g.y, rotation: g.rotation, flip: mirrored };
     const r = Math.abs(g.width);
@@ -381,7 +402,7 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
     const shown = visible(shapeBox, place) || Boolean(image && visible(groundImageBox(ground, g, resolver, mirrored), place));
     // The texture of a culled ground is still built, with no cell drawn: the grounds share one random sequence, so the next
     // grounds get the same pieces as in a picture of the whole map.
-    const textured = textures && !flat && !replaced && !ground.invisible && !g.circle
+    const textured = textures && !flat && !replaced && !hidden && !g.circle
       ? renderTexturedGround(textures, {
         type: ground.type, width: g.width, height: g.height, tint: ground.derived?.tint ?? ground.tint ?? 0x808080,
         dynamic: Boolean(ground.derived?.physics?.dynamic ?? ground.physics?.dynamic), pregeneratedForced,
@@ -392,10 +413,12 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
     let shape = null;
     if (textured) {
       shape = group({ transform: [["translate", ox, oy]] }, textured.base);
-      if (textured.strip) strips.push(group({ dataType: ground.type, transform }, group({ transform: [["translate", -g.width / 2, -g.height / 2]] }, textured.strip)));
+      if (textured.strip) strips.push(group({ dataType: ground.type, transform, filter: ghost ? INVISIBLE_GROUND_FILTER.id : null }, group({ transform: [["translate", -g.width / 2, -g.height / 2]] }, textured.strip)));
     } else {
       const style = (flat && minimalistStyle(ground, own)) || groundStyle(ground.type);
-      const fill = defaults && !ground.invisible && !replaced ? (ground.type === 12 || ground.type === 13 ? own ?? style.fill : style.fill) : null;
+      // A rectangle or circle without `o` is not drawn (spec: S.o).
+      const fill = replaced ? null : ghost && blank ? invisible.color : editorBlack ? "#000000"
+        : defaults && !hidden ? (ground.type === 12 || ground.type === 13 ? own : style.fill) : null;
       if (fill) {
         const fillOpacity = style.opacity ?? null;
         shape = g.circle
@@ -407,10 +430,11 @@ function renderGrounds(map, resolver, defaults, minimalist = false, textures = n
       }
     }
     if (!shape && !image) continue;
-    const element = group({ dataType: ground.type, transform }, [shape, image]);
+    if (ghost) ghosts = true;
+    const element = group({ dataType: ground.type, transform, filter: ghost ? INVISIBLE_GROUND_FILTER.id : null }, [shape, image]);
     (ground.derived?.foreground ?? ground.foreground ? foreground : base).push(element);
   }
-  return { base: [...base, ...strips], foreground };
+  return { base: [ghosts ? defsNode([INVISIBLE_GROUND_FILTER]) : null, ...base, ...strips], foreground };
 }
 
 /**
@@ -844,7 +868,7 @@ function mapBody(map, options, { clientLimits = resolveClientLimits(options.clie
   // Tiled `D` backgrounds cover the map: not content.
   const tiled = !fit && options.renderTiledBackgrounds === true;
   const joints = options.renderJoints === false ? { back: [], front: [] } : renderJoints(map);
-  const grounds = renderGrounds(map, resolver, defaults, options.minimalist === true, textures, options.pregeneratedBitmaps === true, restricted, options.mirrorX === true, visible);
+  const grounds = renderGrounds(map, resolver, defaults, options.minimalist === true, textures, options.pregeneratedBitmaps === true, restricted, options.mirrorX === true, visible, invisibleGroundOptions(options));
   const cheeseSuffix = typeof options.cheeseSuffix === "string" ? options.cheeseSuffix : "";
   const markers = defaults ? markerParts(map, resolver, { cheeseSuffix, spawnMarkers: options.spawnMarkers, mirrored: options.mirrorX === true, visible }) : { back: [], ground: [], objects: [] };
   const backMarkers = markers.back;

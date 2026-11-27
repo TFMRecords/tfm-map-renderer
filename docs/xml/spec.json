@@ -1196,9 +1196,9 @@
       "note": "",
       "field": "grounds[].color",
       "type": "color",
-      "default": "none (white)",
+      "default": "none (not drawn)",
       "rule": "`truthy`, then `hexcolor`.",
-      "meaning": "Colour of a rectangle (12) or circle (13) ground; other types ignore it. Without it those two are white.",
+      "meaning": "Colour of a rectangle (12) or circle (13) ground; other types ignore it. Without it, with an empty `o`, or with a value that reads as -1 (`ffffffff`) those two are not drawn in the game but still collide; the map editor shows the first two cases black.",
       "status": "verified",
       "examples": [
         [
@@ -2971,7 +2971,7 @@
       "restitution": 0.2,
       "bitmapCached": false,
       "foreground": false,
-      "note": "Plain colour `o` (white without it)."
+      "note": "Plain colour `o` (not drawn without it)."
     },
     {
       "type": 13,
@@ -2980,7 +2980,7 @@
       "restitution": 0.2,
       "bitmapCached": false,
       "foreground": false,
-      "note": "Plain colour `o` (white without it); `L` is the radius, `H` is ignored."
+      "note": "Plain colour `o` (not drawn without it); `L` is the radius, `H` is ignored."
     },
     {
       "type": 14,
